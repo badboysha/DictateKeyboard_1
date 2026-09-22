@@ -42,6 +42,12 @@ enum class LocalModelKind {
      * encoder/decoder pair at all — just one model file next to the tokens.
      */
     SENSE_VOICE,
+
+    /**
+     * Dolphin's CTC branch: the same single-file shape as [SENSE_VOICE], but its config has no language
+     * field at all — it is neither told a language nor offered "auto", it simply decodes.
+     */
+    DOLPHIN,
 }
 
 /**
@@ -67,6 +73,29 @@ enum class LocalModelFamily(val displayName: String) {
 }
 
 /**
+ * One row of the picker's first level: a model that stands on its own, or a family standing in for the
+ * variants behind it.
+ *
+ * A view over [LocalModelCatalog.all], never a replacement for it — `all` stays the authority on what
+ * is installed and which recognizer to build.
+ */
+sealed interface LocalModelEntry {
+    val isStreaming: Boolean
+
+    data class Single(val spec: LocalModelSpec) : LocalModelEntry {
+        override val isStreaming: Boolean get() = spec.isStreaming
+    }
+
+    data class Family(
+        val family: LocalModelFamily,
+        val members: List<LocalModelSpec>,
+    ) : LocalModelEntry {
+        /** A family is all live or none of it, which a test holds it to, so the first member decides. */
+        override val isStreaming: Boolean get() = members.first().isStreaming
+    }
+}
+
+/**
  * A selectable on-device model (issue #104). [id] doubles as the install directory name and the value
  * stored in [ProviderAccount.transcriptionModel] for the local provider.
  */
@@ -89,6 +118,19 @@ data class LocalModelSpec(
      * That is what separates GigaAM v2, whose 196-byte vocabulary has no mark in it at all, from v3.
      */
     val punctuates: Boolean = false,
+    /**
+     * The longest stretch of audio this model may be handed in one decode, in seconds.
+     *
+     * Everything shorter goes through in a single pass; past it the recording is split at speech pauses
+     * and the pieces decoded separately, which costs punctuation and capitals at every seam — the model
+     * starts each piece without the sentence it was in the middle of.
+     *
+     * The default is Whisper's, and for years it was every model's: sherpa-onnx crops a Whisper decode
+     * at 30 s and logs that it "discarded the remaining data", so 28 leaves a margin. Nothing else in
+     * the catalog has that ceiling, and several have one far higher — each entry says what its own is
+     * and where the number comes from.
+     */
+    val maxSegmentSeconds: Int = 28,
     val files: List<LocalModelFile>,
     /** Which recognizer to build for it; see [LocalModelKind]. */
     val kind: LocalModelKind = LocalModelKind.WHISPER,
@@ -105,6 +147,16 @@ data class LocalModelSpec(
     val family: LocalModelFamily? = null,
     /** Author, licence and upstream page; see [ModelCredit]. Null only for entries outside [LocalModelCatalog.all]. */
     val credit: ModelCredit? = null,
+    /**
+     * The id of the model that replaced this one, or null while it is still worth offering.
+     *
+     * A superseded entry stays in [LocalModelCatalog.all] and simply stops being offered to anyone who
+     * does not already have it — see [LocalModelCatalog.visibleTopLevel]. It must **not** be deleted
+     * outright: `LocalModelManager.installedIds` filters against `all` and [LocalModelCatalog.kindOf]
+     * falls back to `WHISPER` for an unknown id, so removing it would leave whoever installed it with
+     * hundreds of megabytes they can no longer delete *and* a recognizer built from the wrong kind.
+     */
+    val supersededBy: String? = null,
 ) {
     val totalBytes: Long get() = files.sumOf { it.sizeBytes }
 
@@ -179,7 +231,7 @@ object LocalModelCatalog {
             "Salute Devices / GigaChat Team", "MIT", "https://github.com/salute-developers/GigaAM",
         )
         val SENSE_VOICE = ModelCredit(
-            "Alibaba Group", "FunASR Model Open Source License v1.1",
+            "Alibaba Group", "FunASR Model Open Source License Agreement v1.1",
             "https://github.com/FunAudioLLM/SenseVoice",
         )
         val PRIMELINE = ModelCredit(
@@ -304,6 +356,10 @@ object LocalModelCatalog {
     val PARAKEET_TDT_V3 = LocalModelSpec(
         id = "parakeet-tdt-0.6b-v3",
         displayName = "Parakeet TDT 0.6B v3",
+        // NVIDIA: "up to 24 minutes long with full attention" — on an A100 80 GB. Two minutes is
+        // what a phone is offered instead: attention memory grows with the square of the length,
+        // and a pause every few seconds means the VAD rarely builds a piece this long anyway.
+        maxSegmentSeconds = 120,
         languages = Langs.PARAKEET_V3,
         punctuates = true,
         credit = Credits.nvidia("https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3"),
@@ -334,6 +390,9 @@ object LocalModelCatalog {
     val PARAKEET_TDT_110M_EN = LocalModelSpec(
         id = "parakeet-tdt-110m-en",
         displayName = "Parakeet TDT 110M",
+        // NVIDIA: "can transcribe up to 20 minutes of audio in one single pass". Same reasoning as
+        // the 0.6B above for why the app stops well short of that.
+        maxSegmentSeconds = 120,
         languages = listOf("en"),
         punctuates = true,
         credit = Credits.nvidia("https://huggingface.co/nvidia/parakeet-tdt_ctc-110m"),
@@ -367,6 +426,10 @@ object LocalModelCatalog {
     val FASTCONFORMER_DE = LocalModelSpec(
         id = "fastconformer-de",
         displayName = "FastConformer German",
+        // Not stated on its card, but it is the same FastConformer encoder with full attention as
+        // the Parakeets, which do document minutes. Inference from the architecture rather than a
+        // quoted number — if a long German dictation ever misbehaves, this is the line to suspect.
+        maxSegmentSeconds = 120,
         languages = listOf("de"),
         punctuates = true,
         credit = Credits.nvidia("https://huggingface.co/nvidia/stt_de_fastconformer_hybrid_large_pc"),
@@ -419,6 +482,8 @@ object LocalModelCatalog {
     val CANARY_180M_FLASH = LocalModelSpec(
         id = "canary-180m-flash",
         displayName = "Canary 180M Flash",
+        // NVIDIA: "designed to handle input audio smaller than 40 seconds". Under it with room.
+        maxSegmentSeconds = 35,
         languages = listOf("en", "de", "fr", "es"),
         // Asked for explicitly by `usePnc = true` where the recognizer is built.
         punctuates = true,
@@ -428,6 +493,53 @@ object LocalModelCatalog {
             LocalModelFile("$REL/canary-encoder.int8.onnx", LocalTranscriptionProvider.ENCODER, 132_678_643, "7a75b4e2a5857a6dcc0819503bbe3fad66943db4a3ccf21d3f27c633667d303f"),
             LocalModelFile("$REL/canary-decoder.int8.onnx", LocalTranscriptionProvider.DECODER, 74_437_848, "e41a2ab9c0c2fe81a1e8ade5a45fb02a74bc4db7d1f91b89a54a25e2cf79cba2"),
             LocalModelFile("$REL/canary-tokens.txt", LocalTranscriptionProvider.TOKENS, 53_555, "2dae6fc7815f9640645e0c765522b278ee0cef49b482d91f6913e334628d3e77"),
+            VAD_FILE,
+        ),
+    )
+
+    /**
+     * ~105 MB. Dolphin base (issue #406) — the languages this catalog had no answer for: Hindi, Arabic,
+     * Persian, Thai, Vietnamese, Indonesian, Bengali, Tamil, Urdu, Burmese, Khmer, Lao and the rest of
+     * DataoceanAI and Tsinghua's 40 Eastern languages, trained on 210 000 h, for less than a Whisper Base.
+     *
+     * The gap was not theoretical. Handed natural Hindi, the Whisper Base most people install answers in
+     * **Urdu script** and stops halfway; Dolphin returns correct Devanagari with the question mark in
+     * place. It punctuates in Arabic and CJK too.
+     *
+     * **English is deliberately absent from [languages], and that is not an oversight.** `<en>` exists
+     * in the export's vocabulary but not in Dolphin's documented list, and on real English speech it
+     * answers in Urdu script — so this is a specialist like [FASTCONFORMER_DE] or [GIGAAM_V3_RU], just
+     * one with thirty-nine languages instead of one. Naming them is what keeps someone from picking it
+     * for a language it was never trained on. `ct` in Dolphin's own table is Yue Chinese, carried here
+     * under the ISO code `yue` that the rest of the catalog already uses.
+     *
+     * Its config has only a model path — no language field, not even "auto" — so unlike Canary it can
+     * neither be told a language nor be told wrong. That is also why it fits [LocalModelKind.DOLPHIN]
+     * rather than needing anything from the input-language setting.
+     *
+     * Licensing: Apache-2.0, stated in the export's own README rather than only on a web page; the
+     * sherpa-onnx export is Apache-2.0 as well. Only the CTC branch is exported.
+     */
+    val DOLPHIN_BASE = LocalModelSpec(
+        id = "dolphin-base",
+        displayName = "Dolphin Base",
+        // Left at the conservative default: Dolphin states no limit, and sherpa-onnx does not crop
+        // it either, so there is nothing to raise this to that would not be a guess.
+        maxSegmentSeconds = 28,
+        languages = listOf(
+            "ar", "az", "ba", "bn", "fa", "fil", "gu", "hi", "id", "ja", "jv", "kab", "kk", "km", "ko",
+            "ks", "ky", "lo", "mn", "mr", "ms", "my", "ne", "or", "pa", "ps", "ru", "si", "su", "ta",
+            "te", "tg", "th", "tl", "ug", "ur", "uz", "vi", "yue", "zh",
+        ),
+        punctuates = true,
+        credit = ModelCredit(
+            "DataoceanAI and Tsinghua University", "Apache-2.0",
+            "https://github.com/DataoceanAI/Dolphin",
+        ),
+        kind = LocalModelKind.DOLPHIN,
+        files = listOf(
+            LocalModelFile("$REL/dolphin-base-model.int8.onnx", LocalTranscriptionProvider.MODEL, 103_729_802, "a3aa46c97f3f60f135ff949793cb05fabe7a0b3c484dc2e3cc699d354ee11b76"),
+            LocalModelFile("$REL/dolphin-base-tokens.txt", LocalTranscriptionProvider.TOKENS, 504_662, "c3788261a51df1899ea4b210b552cd42139204de72c0ad60f6cebb199078872e"),
             VAD_FILE,
         ),
     )
@@ -455,6 +567,9 @@ object LocalModelCatalog {
     val GIGAAM_V3_RU = LocalModelSpec(
         id = "gigaam-v3-ru",
         displayName = "GigaAM v3 Russian",
+        // GigaAM's own README: transcription "is applicable for audio only up to 25 seconds";
+        // anything longer wants their external-VAD long-form path. The app was feeding it 29.
+        maxSegmentSeconds = 23,
         languages = listOf("ru"),
         punctuates = true,
         credit = Credits.GIGAAM,
@@ -479,10 +594,13 @@ object LocalModelCatalog {
     val GIGAAM_V2_RU = LocalModelSpec(
         id = "gigaam-v2-ru",
         displayName = "GigaAM v2 Russian",
+        // Same 25 s ceiling as v3.
+        maxSegmentSeconds = 23,
         languages = listOf("ru"),
         // Its whole vocabulary is 196 bytes of Cyrillic letters with not one mark in it, which is the
-        // difference [GIGAAM_V3_RU] was added for.
+        // difference [GIGAAM_V3_RU] was added for — and the reason nobody new is offered this one.
         punctuates = false,
+        supersededBy = "gigaam-v3-ru",
         credit = Credits.GIGAAM,
         kind = LocalModelKind.NEMO_TRANSDUCER,
         files = listOf(
@@ -660,6 +778,9 @@ object LocalModelCatalog {
     val SENSE_VOICE_SMALL = LocalModelSpec(
         id = "sense-voice-small",
         displayName = "SenseVoice Small",
+        // Upstream claims "input of audio ... of any duration", but its own pipeline chunks at 30 s,
+        // so this doubles what it used to get rather than trusting the unlimited claim.
+        maxSegmentSeconds = 60,
         languages = listOf("zh", "yue", "en", "ja", "ko"),
         punctuates = true,
         credit = Credits.SENSE_VOICE,
@@ -692,21 +813,32 @@ object LocalModelCatalog {
     )
 
     /**
-     * All catalog models in display order: Parakeet first (broadest), then Canary — which beats it on
-     * size for the four languages it does speak — then the language-specialized ones, then Whisper
-     * multilingual and its English-only variants. Finally the streaming models, which the picker renders
-     * under their own "Live" heading. Keep the streaming entries last: [LocalModelSection] relies on this
-     * order to know where that heading goes.
+     * All catalog models in display order — **this list is the picker's order**, so it is arranged by
+     * what most people will end up downloading rather than by architecture or by when a model was added.
+     *
+     * Broad coverage and a small download come first: the English Parakeet at 137 MB, then Canary with
+     * the four biggest European languages at 208 MB, then Parakeet v3, which speaks twenty-five but
+     * costs 670 MB. The language specialists follow, and the two 670 MB entries sink towards the bottom.
+     *
+     * **Whisper last**, before the live models. It is the one everybody recognises, which is exactly why
+     * it should not be the first thing offered: for almost every language in this catalog there is now
+     * something here that beats it at its size, and a name people already trust would otherwise collect
+     * the downloads by default.
+     *
+     * Two ordering rules the code depends on: family members must sit next to each other, and the
+     * streaming entries must stay a contiguous tail — [LocalModelSection] puts the "Live" heading in
+     * front of the first of them. Both are covered by tests rather than by hope.
      */
     val all: List<LocalModelSpec> = listOf(
-        PARAKEET_TDT_V3,
-        CANARY_180M_FLASH,
         PARAKEET_TDT_110M_EN,
+        CANARY_180M_FLASH,
+        PARAKEET_TDT_V3,
         FASTCONFORMER_DE,
-        PARAKEET_PRIMELINE_DE,
+        SENSE_VOICE_SMALL,
+        DOLPHIN_BASE,
         GIGAAM_V3_RU,
         GIGAAM_V2_RU,
-        SENSE_VOICE_SMALL,
+        PARAKEET_PRIMELINE_DE,
         WHISPER_TINY, WHISPER_BASE, WHISPER_SMALL,
         WHISPER_TINY_EN, WHISPER_BASE_EN, WHISPER_SMALL_EN,
         KROKO_EN, KROKO_DE, KROKO_ES, KROKO_FR,
@@ -743,6 +875,52 @@ object LocalModelCatalog {
             "en" -> listOf(PARAKEET_TDT_110M_EN, WHISPER_SMALL_EN)
             else -> listOf(WHISPER_BASE, WHISPER_SMALL)
         }
+
+    /**
+     * [all] folded into the rows the picker's first level shows: a family appears once, in the place of
+     * its first member, and everything else stands for itself. Twenty-four entries become ten: eight
+     * models that are their own choice, plus Whisper and Kroko.
+     *
+     * Order is [all]'s, which is what keeps the streaming rows a contiguous tail and the "Live" heading
+     * where it belongs. Relies on a family's members sitting next to each other — asserted by a test,
+     * because getting it wrong here would scatter a family across the list rather than fail loudly.
+     */
+    val topLevel: List<LocalModelEntry> by lazy {
+        val out = mutableListOf<LocalModelEntry>()
+        val seen = mutableSetOf<LocalModelFamily>()
+        for (spec in all) {
+            val family = spec.family
+            if (family == null) {
+                out += LocalModelEntry.Single(spec)
+            } else if (seen.add(family)) {
+                out += LocalModelEntry.Family(family, all.filter { it.family == family })
+            }
+        }
+        out
+    }
+
+    /**
+     * [topLevel] without the models a newer one has replaced — unless they are still on disk, because
+     * a model somebody is using cannot be hidden from them: they would have no way left to switch away
+     * from it or to get its bytes back.
+     *
+     * This is how a model is retired. Dropping it from [all] instead would make
+     * `LocalModelManager.installedIds` blind to it while its directory stays, and [kindOf] would build
+     * the wrong recognizer for anyone whose pick still names it.
+     */
+    fun visibleTopLevel(installed: Set<String>): List<LocalModelEntry> = topLevel.filter { entry ->
+        when (entry) {
+            is LocalModelEntry.Single ->
+                entry.spec.supersededBy == null || entry.spec.id in installed
+            // No family has a superseded member today; when one does, the family row stays and the
+            // variant is filtered inside its own dialog instead.
+            is LocalModelEntry.Family -> true
+        }
+    }
+
+    /** A family's variants, minus the retired ones nobody has installed. See [visibleTopLevel]. */
+    fun visibleMembers(family: LocalModelEntry.Family, installed: Set<String>): List<LocalModelSpec> =
+        family.members.filter { it.supersededBy == null || it.id in installed }
 
     /** Which recognizer [id] needs; unknown ids (a leftover pref) fall back to the Whisper shape. */
     fun kindOf(id: String): LocalModelKind = byId(id)?.kind ?: LocalModelKind.WHISPER
