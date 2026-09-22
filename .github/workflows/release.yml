@@ -1,0 +1,54 @@
+name: Build Release APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Make scripts executable
+        run: |
+          chmod +x gradlew
+          chmod +x tools/fetch-sherpa-onnx.sh
+
+      - name: Fetch Sherpa-ONNX libraries
+        run: ./tools/fetch-sherpa-onnx.sh
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Show APK size
+        run: |
+          ls -lh app/build/outputs/apk/release/*.apk
+          du -h app/build/outputs/apk/release/*.apk
+
+      - name: Compress APK
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/release/*.apk release/
+          zip -9 -j DictateKeyboard-release.zip release/*.apk
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DictateKeyboard-release
+          path: release/*.apk
+          if-no-files-found: error
+
+      - name: Upload Compressed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DictateKeyboard-release-compressed
+          path: DictateKeyboard-release.zip
+          if-no-files-found: v4
