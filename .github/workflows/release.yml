@@ -1,4 +1,4 @@
-name: Build Release APK
+name: Build Optimized Signed Release APK
 
 on:
   workflow_dispatch:
@@ -16,6 +16,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
       - name: Make scripts executable
         run: |
@@ -25,30 +26,23 @@ jobs:
       - name: Fetch Sherpa-ONNX libraries
         run: ./tools/fetch-sherpa-onnx.sh
 
-      - name: Build Release APK
+      - name: Build Optimized Signed Release
         run: ./gradlew assembleRelease
 
       - name: Show APK size
         run: |
           ls -lh app/build/outputs/apk/release/*.apk
-          du -h app/build/outputs/apk/release/*.apk
 
       - name: Compress APK
         run: |
-          mkdir -p release
-          cp app/build/outputs/apk/release/*.apk release/
-          zip -9 -j DictateKeyboard-release.zip release/*.apk
+          mkdir -p final
+          cp app/build/outputs/apk/release/*.apk final/
+          cd final
+          zip -9 ../DictateKeyboard-optimized-signed.zip *.apk
 
-      - name: Upload Release APK
+      - name: Upload ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: DictateKeyboard-release
-          path: release/*.apk
+          name: DictateKeyboard-optimized-signed
+          path: DictateKeyboard-optimized-signed.zip
           if-no-files-found: error
-
-      - name: Upload Compressed APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: DictateKeyboard-release-compressed
-          path: DictateKeyboard-release.zip
-          if-no-files-found: v4
