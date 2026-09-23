@@ -76,15 +76,10 @@ configure<ApplicationExtension> {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // sherpa-onnx on-device STT (issue #104): ship the ABIs the vendored native libs cover —
-        // arm64-v8a (modern phones), armeabi-v7a (older 32-bit devices) and x86_64.
-        //
-        // x86_64 exists for emulators rather than for hardware: without it Play reports the app as
-        // incompatible on every emulator image, which rules out rehearsing a purchase on a throwaway
-        // account. Real users pay nothing for it — the bundle is split per architecture, so a phone
-        // only ever downloads the libraries it can run. See tools/fetch-sherpa-onnx.sh.
+        // sherpa-onnx on-device STT:
+        // Only arm64-v8a is packaged in the APK.
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+            abiFilters += "arm64-v8a"
         }
 
         buildConfigField("String", "BUILD_COMMIT_HASH", "\"${getGitCommitHash().get()}\"")
@@ -117,14 +112,17 @@ configure<ApplicationExtension> {
     // is absent (e.g. on CI without secrets, or a contributor's machine) the release build simply has
     // no signing config attached and falls back to an unsigned build, exactly as before.
     //
-    // IMPORTANT: For uploads to Google Play this must be the *upload key* the existing
-    // net.devemperor.dictate listing expects (the old Java app's key) — a fresh key gets rejected.
+    // IMPORTANT: For uploads to Google Play this must be the upload key the existing
+    // net.devemperor.dictate listing expects.
     val keystorePropsFile = rootProject.file("keystore.properties")
     val keystoreProps = if (keystorePropsFile.exists()) {
-        Properties().apply { keystorePropsFile.inputStream().use { load(it) } }
+        Properties().apply {
+            keystorePropsFile.inputStream().use { load(it) }
+        }
     } else {
         null
     }
+
     signingConfigs {
         keystoreProps?.let { props ->
             create("release") {
@@ -149,7 +147,10 @@ configure<ApplicationExtension> {
             applicationIdSuffix = ".beta"
             versionNameSuffix = projectVersionNameSuffix
 
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             isMinifyEnabled = true
             isShrinkResources = true
         }
@@ -161,7 +162,10 @@ configure<ApplicationExtension> {
                 signingConfig = signingConfigs.getByName("release")
             }
 
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             isMinifyEnabled = true
             isShrinkResources = true
         }
@@ -176,11 +180,6 @@ configure<ApplicationExtension> {
             matchingFallbacks += listOf("release")
         }
     }
-
-    // No `baseline` here on purpose: app/lint.xml is lint's *configuration* file, which lint picks up
-    // from the module directory on its own. Naming it as a baseline made lint read the severity
-    // overrides as recorded findings and left every real issue unbaselined, so any fatal one failed
-    // the release build (issue #332).
 
     testOptions {
         unitTests {
@@ -206,13 +205,13 @@ ksp {
 
 tasks.withType<Test> {
     testLogging {
-        events = setOf(TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED)
+        events = setOf(
+            TestLogEvent.FAILED,
+            TestLogEvent.PASSED,
+            TestLogEvent.SKIPPED
+        )
     }
-    // Gradle hands a test JVM 512 MB unless told otherwise, and the property tests in
-    // ImeWindowControllerEditorMoveTest build a datastore and a controller per iteration — with the
-    // coverage agent attached that runs out of heap partway through the suite. On a memory-tight
-    // machine it surfaces as an OutOfMemoryError, on a roomier one as a test worker that never
-    // finishes shutting down (issue #331).
+
     maxHeapSize = "2g"
     useJUnitPlatform()
 }
@@ -223,12 +222,8 @@ kover {
 
 dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
-    implementation(composeBom)
-    // testImplementation(composeBom)
-    // androidTestImplementation(composeBom)
 
-    // Play Billing for the optional Dictate Cloud credit packs (#255 follow-up). Version 8 is
-    // not a choice: from 31.08.2026 Play refuses uploads built against anything older.
+    implementation(composeBom)
     implementation(libs.android.billing.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.activity.ktx)
@@ -250,7 +245,6 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.window.core)
     implementation(libs.cache4k)
-    // GIF search (Klipy): Compose image loading + animated GIF/WebP decoding + OkHttp network fetcher.
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
     implementation(libs.coil.network.okhttp)
@@ -259,18 +253,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.mikepenz.aboutlibraries.core)
     implementation(libs.mikepenz.aboutlibraries.compose)
-    // Scan text (issue #390): on-device OCR for the printed IBAN/serial/address nobody wants to retype.
-    // Deliberately the BUNDLED model rather than com.google.android.gms:play-services-mlkit-text-
-    // recognition, which fetches the model over the network on first use — #390 promises that nothing
-    // about this feature talks to a network, and a first tap that says "still downloading" would break
-    // that twice over. Measured in the built APK (2026-09-16), arm64-v8a, which is the only number that
-    // matters once the bundle splits per ABI:
-    //   download  ~5.7 MB — libmlkit_google_ocr_pipeline.so compresses to 4.41 MB, the tflite models
-    //                       under assets/mlkit-google-ocr-models/ to 1.28 MB
-    //   installed ~12.6 MB — the .so is stored uncompressed and page-aligned (11.06 MB) plus 1.49 MB
-    //                       of models. armeabi-v7a is 6.78 MB, x86_64 11.63 MB.
-    // Next to the 26 MB of libonnxruntime.so this app already ships, and play-services-base/-basement
-    // already come in via play-services-wearable.
     implementation(libs.mlkit.text.recognition)
     implementation(libs.okhttp)
     implementation(libs.patrickgold.compose.tooltip)
@@ -279,13 +261,7 @@ dependencies {
     implementation(libs.patrickgold.jetpref.datastore.ui)
     implementation(libs.patrickgold.jetpref.material.ui)
 
-    // sherpa-onnx on-device STT spike (issue #104). Vendored from the v1.13.3 GitHub release AAR:
-    // the Kotlin/JNI API as a jar here; the matching native .so live in src/main/jniLibs/<abi>/.
-    // Not on Maven Central, so consumed as a local file (see private/docs/research/sherpa-onnx-feasibility.md).
     implementation(files("libs/sherpa-onnx-1.13.3.jar"))
-    // Generic ONNX Runtime Java/JNI bridge for Smart Turn v3. The matching 1.24.3 runtime is already
-    // shipped by sherpa-onnx; tools/fetch-sherpa-onnx.sh extracts only the API jar + tiny JNI bridge,
-    // avoiding a second ~20–27 MB copy of libonnxruntime per ABI.
     implementation(files("libs/onnxruntime-android-1.24.3.jar"))
 
     implementation(projects.lib.android)
@@ -293,7 +269,6 @@ dependencies {
     implementation(projects.lib.dictateCore)
     implementation(projects.lib.compose)
 
-    // Wearable Data Layer: settings sync + tethered transcription with the Wear OS app (#106).
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(projects.lib.kotlin)
@@ -309,37 +284,37 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
 }
 
-// On-device STT (issue #104): the sherpa-onnx native libs are vendored, not committed (see
-// .gitignore). Fail early with a clear instruction instead of a cryptic linker error if a fresh
-// clone hasn't fetched them yet.
+// On-device STT: only arm64-v8a native libraries are required.
 val verifySherpaOnnxLibs by tasks.registering {
-    // Resolve paths at configuration time so the action captures only plain Files (configuration
-    // cache cannot serialize references to Gradle script/Project objects).
     val projectDir = layout.projectDirectory
+
     val required = buildList {
         add(projectDir.file("libs/sherpa-onnx-1.13.3.jar").asFile)
         add(projectDir.file("libs/onnxruntime-android-1.24.3.jar").asFile)
-        // Must match the abiFilters above. A missing ABI here would not fail the build — it would
-        // produce a split for that architecture carrying no sherpa-onnx at all, which installs
-        // happily and then dies the first time on-device transcription or the VAD is touched.
-        for (abi in listOf("arm64-v8a", "armeabi-v7a", "x86_64")) {
+
+        for (abi in listOf("arm64-v8a")) {
             add(projectDir.file("src/main/jniLibs/$abi/libonnxruntime.so").asFile)
             add(projectDir.file("src/main/jniLibs/$abi/libonnxruntime4j_jni.so").asFile)
             add(projectDir.file("src/main/jniLibs/$abi/libsherpa-onnx-jni.so").asFile)
         }
     }
+
     doLast {
         val missing = required.filterNot { it.exists() }
+
         if (missing.isNotEmpty()) {
             throw GradleException(
                 "Missing vendored sherpa-onnx native libs:\n" +
                     missing.joinToString("\n") { "  - ${it.name}" } +
-                    "\n\nRun:  tools/fetch-sherpa-onnx.sh",
+                    "\n\nRun: tools/fetch-sherpa-onnx.sh",
             )
         }
     }
 }
-tasks.named("preBuild").configure { dependsOn(verifySherpaOnnxLibs) }
+
+tasks.named("preBuild").configure {
+    dependsOn(verifySherpaOnnxLibs)
+}
 
 fun getGitCommitHash(short: Boolean = false): Provider<String> {
     if (!File(".git").exists()) {
@@ -353,5 +328,6 @@ fun getGitCommitHash(short: Boolean = false): Provider<String> {
             commandLine("git", "rev-parse", "HEAD")
         }
     }
+
     return execProvider.standardOutput.asText.map { it.trim() }
 }
