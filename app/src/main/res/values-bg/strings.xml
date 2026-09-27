@@ -716,6 +716,7 @@
     <string name="clipboard__group_pinned">Закачени</string>
     <string name="clipboard__group_recent">Последни</string>
     <string name="clipboard__group_other">Други</string>
+    <string name="pref__clipboard__history_pinned_on_top__label">Закачените най-отгоре</string>
     <string name="clipboard__item_description_email">Електронна поща</string>
     <string name="clipboard__item_description_url">Адрес</string>
     <string name="clipboard__item_description_phone">Телефон</string>
@@ -1146,6 +1147,8 @@
     <string name="quick_action__ime_ui_mode_editing__tooltip">Преместване на курсора, избор и редактиране на текст</string>
     <string name="quick_action__ime_ui_mode_scan">Сканиране на текст</string>
     <string name="quick_action__ime_ui_mode_scan__tooltip">Снимайте печатен текст и го вмъкнете</string>
+    <string name="quick_action__translate">Превод</string>
+    <string name="quick_action__translate__tooltip">Превеждайте, докато пишете, направо на устройството</string>
     <string name="quick_action__ime_ui_mode_dictate">Диктовка</string>
     <string name="quick_action__ime_ui_mode_dictate__tooltip">Докоснете, за да диктувате, докоснете отново за транскрибиране</string>
     <string name="quick_action__dictate_live_prompt">Гласова инструкция</string>
@@ -1371,6 +1374,10 @@
     <string name="dictate__providers_cap_chat">Преформулиране</string>
     <string name="dictate__providers_add_custom">Добавяне на собствен сървър</string>
     <string name="dictate__providers_add_custom_summary">Собствен хостинг или всяка крайна точка, съвместима с OpenAI — за разпознаване на реч и преформулиране</string>
+    <string name="dictate__providers_add">Добавяне на доставчик</string>
+    <string name="dictate__providers_search">Търсене на доставчици</string>
+    <string name="dictate__providers_filter_eu">ЕС</string>
+    <string name="dictate__providers_add_none">Няма съответстващ доставчик</string>
     <string name="dictate__providers_azure_endpoint">Endpoint стои до ключа на страницата „Keys and Endpoint“ в портала. MAI-Transcribe работи само в East US, West US, West US 2, North Europe, Southeast Asia и Central India.</string>
     <string name="dictate__providers_ollama_no_stt">Ollama няма крайна точка за разпознаване на реч, затова може само да преформулира. За диктовка през собствен сървър пуснете сървър за реч (например Speaches, faster-whisper-server или whisper.cpp) и го добавете от „Добавяне на собствен сървър“ — или използвайте разпознаването на устройството, за което изобщо не е нужен сървър.</string>
     <string name="dictate__providers_region_title">Регион</string>
@@ -1514,6 +1521,11 @@
     <string name="dictate__languages_summary">Изберете езиците, на които диктувате. Превключвайте бързо между тях от лентата за запис.</string>
     <string name="dictate__language_detect">Откривай автоматично</string>
     <string name="dictate__languages_active_title">Активен език</string>
+    <string name="dictate__languages_follow_keyboard">Следване на езика на клавиатурата</string>
+    <string name="dictate__languages_follow_keyboard_summary">Сменя и диктовката, ако езикът е отметнат по-долу</string>
+    <string name="quick_action__dictate_switch_provider">Доставчик на транскрибиране</string>
+    <string name="quick_action__dictate_switch_provider__tooltip">Смяна на доставчика на транскрибиране</string>
+    <string name="enum__space_bar_mode__transcription_provider">Доставчик на транскрибиране</string>
     <string name="dictate__prompt_selection_none">Няма</string>
     <string name="dictate__prompt_selection_predefined">По подразбиране</string>
     <string name="dictate__prompt_selection_custom">Персонализиран</string>
@@ -2405,4 +2417,23 @@
     <string name="scan__select_all">Избери всичко</string>
     <string name="scan__discard">Отхвърли</string>
     <string name="scan__approve">Приеми</string>
+
+    <!-- On-device translation (issue #424) -->
+    <string name="settings__translation__title">Превод</string>
+    <string name="translate__settings_intro">Превежда направо на телефона ви и нищо от това, което пишете, не го напуска. Отваря се с „Превод“ в интелигентната лента.</string>
+    <string name="translate__group_installed">Изтеглени</string>
+    <string name="translate__group_available">Налични</string>
+    <string name="translate__english_included">Винаги наличен</string>
+    <string name="translate__size_installed">{size} на устройството</string>
+    <string name="translate__size_download">{download} за изтегляне · {size} на устройството</string>
+    <string name="translate__hint">Въведете текст за превод</string>
+    <string name="translate__detect">Разпознаване на езика</string>
+    <string name="translate__detected">{language} (разпознат)</string>
+    <string name="translate__swap">Размяна на езиците</string>
+    <string name="translate__no_languages">Все още няма изтеглен език</string>
+    <string name="translate__get_languages">Изтегляне на езици</string>
+    <string name="translate__more_languages">Още езици</string>
+    <string name="translate__missing">Не е изтеглено: {language}</string>
+    <string name="translate__failed">Преводът не бе успешен</string>
+    <string name="translate__unsupported">Преводът не е наличен на това устройство</string>
 </resources>

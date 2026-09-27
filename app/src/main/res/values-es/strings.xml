@@ -709,6 +709,7 @@
     <string name="clipboard__group_pinned">Anclado</string>
     <string name="clipboard__group_recent">Reciente</string>
     <string name="clipboard__group_other">Otro</string>
+    <string name="pref__clipboard__history_pinned_on_top__label">Elementos anclados arriba</string>
     <string name="clipboard__item_description_email">Correo electrónico</string>
     <string name="clipboard__item_description_url">URL</string>
     <string name="clipboard__item_description_phone">Teléfono</string>
@@ -1128,6 +1129,8 @@
     <string name="quick_action__ime_ui_mode_editing__tooltip">Mueve el cursor, selecciona y edita el texto</string>
     <string name="quick_action__ime_ui_mode_scan">Escanear texto</string>
     <string name="quick_action__ime_ui_mode_scan__tooltip">Fotografía un texto impreso e insértalo</string>
+    <string name="quick_action__translate">Traducir</string>
+    <string name="quick_action__translate__tooltip">Traduce mientras escribes, en este dispositivo</string>
     <string name="quick_action__ime_ui_mode_dictate">Dictate</string>
     <string name="quick_action__ime_ui_mode_dictate__tooltip">Toca para dictar, toca de nuevo para transcribir</string>
     <string name="quick_action__dictate_live_prompt">Instrucción en vivo</string>
@@ -1353,6 +1356,10 @@
     <string name="dictate__providers_cap_chat">Reformulación</string>
     <string name="dictate__providers_add_custom">Añadir tu propio servidor</string>
     <string name="dictate__providers_add_custom_summary">Autoalojado o cualquier endpoint compatible con OpenAI: para reconocimiento de voz y reformulación</string>
+    <string name="dictate__providers_add">Añadir proveedor</string>
+    <string name="dictate__providers_search">Buscar proveedores</string>
+    <string name="dictate__providers_filter_eu">UE</string>
+    <string name="dictate__providers_add_none">Ningún proveedor coincide</string>
     <string name="dictate__providers_azure_endpoint">El endpoint está junto a la clave en la página «Keys and Endpoint» del portal. MAI-Transcribe solo funciona en East US, West US, West US 2, North Europe, Southeast Asia y Central India.</string>
     <string name="dictate__providers_ollama_no_stt">Ollama no tiene endpoint de reconocimiento de voz, así que solo puede reformular. Para dictar a través de un servidor propio, levanta un servidor de voz (como Speaches, faster-whisper-server o whisper.cpp) y añádelo en «Añadir tu propio servidor» — o usa el motor en el dispositivo, que no necesita ningún servidor.</string>
     <string name="dictate__providers_region_title">Región</string>
@@ -1496,6 +1503,11 @@
     <string name="dictate__languages_summary">Elige los idiomas en los que dictas. Cambia rápidamente entre ellos desde la barra de grabación.</string>
     <string name="dictate__language_detect">Detectar automáticamente</string>
     <string name="dictate__languages_active_title">Idioma activo</string>
+    <string name="dictate__languages_follow_keyboard">Seguir el idioma del teclado</string>
+    <string name="dictate__languages_follow_keyboard_summary">También cambia el dictado, si el idioma está marcado abajo</string>
+    <string name="quick_action__dictate_switch_provider">Proveedor de transcripción</string>
+    <string name="quick_action__dictate_switch_provider__tooltip">Cambiar el proveedor de transcripción</string>
+    <string name="enum__space_bar_mode__transcription_provider">Proveedor de transcripción</string>
     <string name="dictate__prompt_selection_none">Ninguno</string>
     <string name="dictate__prompt_selection_predefined">Predeterminado</string>
     <string name="dictate__prompt_selection_custom">Personalizado</string>
@@ -2387,4 +2399,23 @@
     <string name="scan__select_all">Seleccionar todo</string>
     <string name="scan__discard">Descartar</string>
     <string name="scan__approve">Aceptar</string>
+
+    <!-- On-device translation (issue #424) -->
+    <string name="settings__translation__title">Traducción</string>
+    <string name="translate__settings_intro">Traduce directamente en tu teléfono y nada de lo que escribes sale de él. Se abre con «Traducir» en la barra inteligente.</string>
+    <string name="translate__group_installed">Descargados</string>
+    <string name="translate__group_available">Disponibles</string>
+    <string name="translate__english_included">Siempre incluido</string>
+    <string name="translate__size_installed">{size} en el dispositivo</string>
+    <string name="translate__size_download">{download} de descarga · {size} en el dispositivo</string>
+    <string name="translate__hint">Escribe para traducir</string>
+    <string name="translate__detect">Detectar idioma</string>
+    <string name="translate__detected">{language} (detectado)</string>
+    <string name="translate__swap">Intercambiar idiomas</string>
+    <string name="translate__no_languages">Aún no hay ningún idioma descargado</string>
+    <string name="translate__get_languages">Descargar idiomas</string>
+    <string name="translate__more_languages">Más idiomas</string>
+    <string name="translate__missing">Falta descargar {language}</string>
+    <string name="translate__failed">No se pudo traducir</string>
+    <string name="translate__unsupported">La traducción no está disponible en este dispositivo</string>
 </resources>

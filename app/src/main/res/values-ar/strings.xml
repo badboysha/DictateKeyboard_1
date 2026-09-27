@@ -594,6 +594,7 @@
     <string name="clipboard__group_pinned">مثبّت</string>
     <string name="clipboard__group_recent">حديث</string>
     <string name="clipboard__group_other">أخرى</string>
+    <string name="pref__clipboard__history_pinned_on_top__label">العناصر المثبّتة في الأعلى</string>
     <string name="clipboard__item_description_email">البريد الإلكتروني</string>
     <string name="clipboard__item_description_url">الرابط</string>
     <string name="clipboard__item_description_phone">الهاتف</string>
@@ -1004,6 +1005,8 @@
     <string name="quick_action__ime_ui_mode_editing__tooltip">تحريك المؤشر وتحديد النص وتحريره</string>
     <string name="quick_action__ime_ui_mode_scan">مسح النص</string>
     <string name="quick_action__ime_ui_mode_scan__tooltip">صوّر نصًا مطبوعًا وأدرجه</string>
+    <string name="quick_action__translate">ترجمة</string>
+    <string name="quick_action__translate__tooltip">ترجم أثناء الكتابة، على هذا الجهاز</string>
     <string name="quick_action__ime_ui_mode_dictate">الإملاء</string>
     <string name="quick_action__ime_ui_mode_dictate__tooltip">انقر للإملاء، وانقر مرة أخرى للتفريغ النصي</string>
     <string name="quick_action__dictate_live_prompt">أمر صوتي</string>
@@ -1229,6 +1232,10 @@
     <string name="dictate__providers_cap_chat">إعادة الصياغة</string>
     <string name="dictate__providers_add_custom">إضافة خادمك الخاص</string>
     <string name="dictate__providers_add_custom_summary">مستضاف ذاتيًا أو أي نقطة نهاية متوافقة مع OpenAI — للتعرّف على الكلام وإعادة الصياغة</string>
+    <string name="dictate__providers_add">إضافة مزوّد</string>
+    <string name="dictate__providers_search">البحث عن مزوّدين</string>
+    <string name="dictate__providers_filter_eu">الاتحاد الأوروبي</string>
+    <string name="dictate__providers_add_none">لا يوجد مزوّد مطابق</string>
     <string name="dictate__providers_azure_endpoint">تظهر نقطة النهاية بجوار المفتاح في صفحة «Keys and Endpoint» في البوابة. يعمل MAI-Transcribe فقط في East US وWest US وWest US 2 وNorth Europe وSoutheast Asia وCentral India.</string>
     <string name="dictate__providers_ollama_no_stt">لا يوفّر Ollama نقطة نهاية للتعرّف على الكلام، لذا يمكنه إعادة الصياغة فقط. للإملاء عبر خادم خاص بك، شغّل خادم تعرّف على الكلام (مثل Speaches أو faster-whisper-server أو whisper.cpp) وأضفه من “إضافة خادمك الخاص” — أو استخدم المحرّك على الجهاز، الذي لا يحتاج إلى خادم إطلاقًا.</string>
     <string name="dictate__providers_region_title">المنطقة</string>
@@ -1372,6 +1379,11 @@
     <string name="dictate__languages_summary">اختر اللغات التي تُملي بها. بدّل بينها بسرعة من شريط التسجيل.</string>
     <string name="dictate__language_detect">الكشف تلقائيًا</string>
     <string name="dictate__languages_active_title">اللغة النشطة</string>
+    <string name="dictate__languages_follow_keyboard">اتّباع لغة لوحة المفاتيح</string>
+    <string name="dictate__languages_follow_keyboard_summary">يبدّل لغة الإملاء أيضًا إذا كانت اللغة محدّدة أدناه</string>
+    <string name="quick_action__dictate_switch_provider">مزوّد التفريغ النصي</string>
+    <string name="quick_action__dictate_switch_provider__tooltip">تبديل مزوّد التفريغ النصي</string>
+    <string name="enum__space_bar_mode__transcription_provider">مزوّد التفريغ النصي</string>
     <string name="dictate__prompt_selection_none">بدون</string>
     <string name="dictate__prompt_selection_predefined">افتراضي</string>
     <string name="dictate__prompt_selection_custom">مخصّص</string>
@@ -2267,4 +2279,23 @@
     <string name="scan__select_all">تحديد الكل</string>
     <string name="scan__discard">تجاهل</string>
     <string name="scan__approve">قبول</string>
+
+    <!-- On-device translation (issue #424) -->
+    <string name="settings__translation__title">الترجمة</string>
+    <string name="translate__settings_intro">يترجم مباشرة على هاتفك، ولا يغادره شيء مما تكتبه. افتحه من «ترجمة» في الشريط الذكي.</string>
+    <string name="translate__group_installed">المنزّلة</string>
+    <string name="translate__group_available">المتاحة</string>
+    <string name="translate__english_included">مضمّنة دائمًا</string>
+    <string name="translate__size_installed">{size} على الجهاز</string>
+    <string name="translate__size_download">تنزيل {download} · {size} على الجهاز</string>
+    <string name="translate__hint">اكتب للترجمة</string>
+    <string name="translate__detect">اكتشاف اللغة</string>
+    <string name="translate__detected">{language} (مكتشفة)</string>
+    <string name="translate__swap">تبديل اللغتين</string>
+    <string name="translate__no_languages">لم يتم تنزيل أي لغة بعد</string>
+    <string name="translate__get_languages">تنزيل اللغات</string>
+    <string name="translate__more_languages">لغات أخرى</string>
+    <string name="translate__missing">لم يتم تنزيل {language}</string>
+    <string name="translate__failed">فشلت الترجمة</string>
+    <string name="translate__unsupported">الترجمة غير متاحة على هذا الجهاز</string>
 </resources>

@@ -664,6 +664,7 @@
     <string name="clipboard__group_pinned">Angeheftet</string>
     <string name="clipboard__group_recent">Aktuell</string>
     <string name="clipboard__group_other">Andere</string>
+    <string name="pref__clipboard__history_pinned_on_top__label">Angeheftete oben</string>
     <string name="clipboard__item_description_email">E-Mail</string>
     <string name="clipboard__item_description_url">URL</string>
     <string name="clipboard__item_description_phone">Telefon</string>
@@ -1084,6 +1085,8 @@
     <string name="quick_action__ime_ui_mode_editing__tooltip">Cursor bewegen, Text auswählen und bearbeiten</string>
     <string name="quick_action__ime_ui_mode_scan">Text scannen</string>
     <string name="quick_action__ime_ui_mode_scan__tooltip">Gedruckten Text fotografieren und einfügen</string>
+    <string name="quick_action__translate">Übersetzen</string>
+    <string name="quick_action__translate__tooltip">Beim Tippen übersetzen, direkt auf dem Gerät</string>
     <string name="quick_action__ime_ui_mode_dictate">Dictate</string>
     <string name="quick_action__ime_ui_mode_dictate__tooltip">Tippen zum Diktieren, erneut tippen zum Transkribieren</string>
     <string name="quick_action__dictate_live_prompt">Live-Prompt</string>
@@ -1300,6 +1303,10 @@
     <string name="dictate__providers_cap_chat">Umformulierung</string>
     <string name="dictate__providers_add_custom">Eigenen Server hinzufügen</string>
     <string name="dictate__providers_add_custom_summary">Selbst gehostet oder jeder OpenAI-kompatible Endpunkt — für Spracherkennung und Umformulierung</string>
+    <string name="dictate__providers_add">Anbieter hinzufügen</string>
+    <string name="dictate__providers_search">Anbieter suchen</string>
+    <string name="dictate__providers_filter_eu">EU</string>
+    <string name="dictate__providers_add_none">Kein Anbieter passt</string>
     <string name="dictate__providers_azure_endpoint">Der Endpunkt steht im Portal neben dem Schlüssel auf der Seite „Keys and Endpoint“. MAI-Transcribe läuft nur in East US, West US, West US 2, North Europe, Southeast Asia und Central India.</string>
     <string name="dictate__providers_ollama_no_stt">Ollama hat keinen Endpunkt für Spracherkennung und kann deshalb nur umformulieren. Zum Diktieren über einen eigenen Server richte einen Spracherkennungs-Server ein (etwa Speaches, faster-whisper-server oder whisper.cpp) und trage ihn unter „Eigenen Server hinzufügen“ ein — oder nutze die Erkennung auf dem Gerät, die ganz ohne Server auskommt.</string>
     <string name="dictate__providers_region_title">Region</string>
@@ -1505,6 +1512,11 @@
     <string name="dictate__languages_summary">Wähle die Sprachen, in denen du diktierst. Wechsle über die Aufnahmeleiste schnell zwischen ihnen.</string>
     <string name="dictate__language_detect">Automatisch erkennen</string>
     <string name="dictate__languages_active_title">Aktive Sprache</string>
+    <string name="dictate__languages_follow_keyboard">Der Tastatursprache folgen</string>
+    <string name="dictate__languages_follow_keyboard_summary">Wechselt das Diktat mit, wenn die Sprache unten angehakt ist</string>
+    <string name="quick_action__dictate_switch_provider">Transkriptionsanbieter</string>
+    <string name="quick_action__dictate_switch_provider__tooltip">Transkriptionsanbieter wechseln</string>
+    <string name="enum__space_bar_mode__transcription_provider">Transkriptionsanbieter</string>
     <string name="dictate__prompt_selection_none">Keine</string>
     <string name="dictate__prompt_selection_predefined">Standard</string>
     <string name="dictate__prompt_selection_custom">Benutzerdefiniert</string>
@@ -2317,4 +2329,23 @@
     <string name="scan__select_all">Alles auswählen</string>
     <string name="scan__discard">Verwerfen</string>
     <string name="scan__approve">Übernehmen</string>
+
+    <!-- On-device translation (issue #424) -->
+    <string name="settings__translation__title">Übersetzen</string>
+    <string name="translate__settings_intro">Übersetzt direkt auf deinem Handy, nichts von dem, was du tippst, verlässt es. Du öffnest es mit „Übersetzen“ in der Schnellzugriffsleiste.</string>
+    <string name="translate__group_installed">Heruntergeladen</string>
+    <string name="translate__group_available">Verfügbar</string>
+    <string name="translate__english_included">Immer dabei</string>
+    <string name="translate__size_installed">{size} auf dem Gerät</string>
+    <string name="translate__size_download">{download} Download · {size} auf dem Gerät</string>
+    <string name="translate__hint">Zum Übersetzen tippen</string>
+    <string name="translate__detect">Sprache erkennen</string>
+    <string name="translate__detected">{language} (erkannt)</string>
+    <string name="translate__swap">Sprachen tauschen</string>
+    <string name="translate__no_languages">Noch keine Sprache heruntergeladen</string>
+    <string name="translate__get_languages">Sprachen laden</string>
+    <string name="translate__more_languages">Weitere Sprachen</string>
+    <string name="translate__missing">{language} ist nicht heruntergeladen</string>
+    <string name="translate__failed">Übersetzung fehlgeschlagen</string>
+    <string name="translate__unsupported">Übersetzen ist auf diesem Gerät nicht verfügbar</string>
 </resources>

@@ -50,6 +50,9 @@ object SettingsSearchIndex {
         // system file picker instead (issue #301).
         SettingsSearchEntry(R.string.dictate__import_menu, R.string.dictate__title, Routes.Settings.Dictate, anchor = "dictate__import_menu"),
         SettingsSearchEntry(R.string.dictate__languages_title, R.string.dictate__languages_title, Routes.Settings.DictateLanguages, parentRes = R.string.dictate__title),
+        // Hand-added: the languages screen is a plain list, not jetpref rows, so the generator cannot see
+        // this switch (issue #431).
+        SettingsSearchEntry(R.string.dictate__languages_follow_keyboard, R.string.dictate__languages_title, Routes.Settings.DictateLanguages, parentRes = R.string.dictate__title, anchor = "dictate__languages_follow_keyboard"),
         SettingsSearchEntry(R.string.dictate__mappings_title, R.string.dictate__mappings_title, Routes.Settings.DictateMappings, parentRes = R.string.dictate__title),
         SettingsSearchEntry(R.string.dictate__prompt_library_title, R.string.dictate__prompt_library_title, Routes.Settings.DictatePromptLibrary, parentRes = R.string.dictate__title),
         SettingsSearchEntry(R.string.dictate__providers_title, R.string.dictate__providers_title, Routes.Settings.DictateProviders, parentRes = R.string.dictate__title),
@@ -69,6 +72,9 @@ object SettingsSearchIndex {
         SettingsSearchEntry(R.string.settings__keyboard__title, R.string.settings__keyboard__title, Routes.Settings.Keyboard),
         SettingsSearchEntry(R.string.settings__localization__title, R.string.settings__localization__title, Routes.Settings.Localization),
         SettingsSearchEntry(R.string.settings__media__title, R.string.settings__media__title, Routes.Settings.Media),
+        // Hand-added (issue #424): the generator has not been run since TranslationScreen existed (it is in
+        // its SCREEN_ROUTE now), and its language rows are custom composables with nothing to anchor.
+        SettingsSearchEntry(R.string.settings__translation__title, R.string.settings__translation__title, Routes.Settings.Translation),
         SettingsSearchEntry(R.string.settings__smartbar__title, R.string.settings__smartbar__title, Routes.Settings.Smartbar),
         // Hand-added (issue #385): the generator has no entry for this screen file, and running it
         // would drop the keywordsRes arguments below along with every other hand-added row.
@@ -112,6 +118,8 @@ object SettingsSearchIndex {
         SettingsSearchEntry(R.string.pref__clipboard__group_clipboard_history__label, R.string.settings__clipboard__title, Routes.Settings.Clipboard),
         SettingsSearchEntry(R.string.pref__clipboard__enable_clipboard_history__label, R.string.settings__clipboard__title, Routes.Settings.Clipboard, anchor = "pref__clipboard__enable_clipboard_history__label"),
         SettingsSearchEntry(R.string.pref__clipboard__num_history_grid_columns__label, R.string.settings__clipboard__title, Routes.Settings.Clipboard, anchor = "pref__clipboard__num_history_grid_columns__label"),
+        // Hand-added (issue #395): a rerun of the generator no longer compiles, so new rows go in by hand.
+        SettingsSearchEntry(R.string.pref__clipboard__history_pinned_on_top__label, R.string.settings__clipboard__title, Routes.Settings.Clipboard, anchor = "pref__clipboard__history_pinned_on_top__label"),
         SettingsSearchEntry(R.string.pref__clipboard__clean_up_old__label, R.string.settings__clipboard__title, Routes.Settings.Clipboard, anchor = "pref__clipboard__clean_up_old__label"),
         SettingsSearchEntry(R.string.pref__clipboard__clean_up_after__label, R.string.settings__clipboard__title, Routes.Settings.Clipboard, anchor = "pref__clipboard__clean_up_after__label"),
         SettingsSearchEntry(R.string.pref__clipboard__auto_clean_sensitive__label, R.string.settings__clipboard__title, Routes.Settings.Clipboard, anchor = "pref__clipboard__auto_clean_sensitive__label"),
@@ -143,7 +151,8 @@ object SettingsSearchIndex {
         SettingsSearchEntry(R.string.dictate__history_export_title, R.string.dictate__history_title, Routes.Settings.DictateHistory, parentRes = R.string.dictate__title),
         SettingsSearchEntry(R.string.dictate__mappings_empty_title, R.string.dictate__mappings_title, Routes.Settings.DictateMappings, parentRes = R.string.dictate__title, anchor = "dictate__mappings_empty_title"),
         SettingsSearchEntry(R.string.dictate__mappings_add, R.string.dictate__mappings_title, Routes.Settings.DictateMappings, parentRes = R.string.dictate__title, anchor = "dictate__mappings_add"),
-        SettingsSearchEntry(R.string.dictate__providers_add_custom, R.string.dictate__providers_title, Routes.Settings.DictateProviders, parentRes = R.string.dictate__title, anchor = "dictate__providers_add_custom"),
+        SettingsSearchEntry(R.string.dictate__providers_add, R.string.dictate__providers_title, Routes.Settings.DictateProviders, parentRes = R.string.dictate__title, anchor = "dictate__providers_add"),
+        SettingsSearchEntry(R.string.dictate__providers_add_custom, R.string.dictate__providers_add, Routes.Settings.DictateProvidersAdd, parentRes = R.string.dictate__providers_title, anchor = "dictate__providers_add_custom"),
         SettingsSearchEntry(R.string.dictate__cloud_packs_title, R.string.dictate__cloud_title, Routes.Settings.DictateCloud, parentRes = R.string.dictate__title),
         SettingsSearchEntry(R.string.dictate__cloud_recovery_title, R.string.dictate__cloud_title, Routes.Settings.DictateCloud, parentRes = R.string.dictate__title),
         SettingsSearchEntry(R.string.dictate__cloud_balance_label, R.string.dictate__cloud_title, Routes.Settings.DictateCloud, parentRes = R.string.dictate__title),
@@ -369,6 +378,6 @@ object SettingsSearchIndex {
         SettingsSearchEntry(R.string.pref__spelling__language_mode__label, R.string.settings__typing__title, Routes.Settings.Typing, anchor = "pref__spelling__language_mode__label"),
         SettingsSearchEntry(R.string.pref__spelling__use_contacts__label, R.string.settings__typing__title, Routes.Settings.Typing, anchor = "pref__spelling__use_contacts__label"),
         SettingsSearchEntry(R.string.pref__spelling__use_udm_entries__label, R.string.settings__typing__title, Routes.Settings.Typing, anchor = "pref__spelling__use_udm_entries__label"),
-        SettingsSearchEntry(R.string.settings__dictionary__title, R.string.settings__typing__title, Routes.Settings.Typing),
+        SettingsSearchEntry(R.string.settings__dictionary__title, R.string.settings__typing__title, Routes.Settings.Typing, anchor = "settings__dictionary__title"),
     )
 }

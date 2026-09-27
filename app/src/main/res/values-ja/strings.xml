@@ -682,6 +682,7 @@
     <string name="clipboard__group_pinned">ピン留め済み</string>
     <string name="clipboard__group_recent">最近の項目</string>
     <string name="clipboard__group_other">その他</string>
+    <string name="pref__clipboard__history_pinned_on_top__label">ピン留めした項目を上に表示</string>
     <string name="clipboard__item_description_email">メール</string>
     <string name="clipboard__item_description_url">URL</string>
     <string name="clipboard__item_description_phone">電話</string>
@@ -1078,6 +1079,8 @@
     <string name="quick_action__ime_ui_mode_editing__tooltip">カーソル移動、選択、テキスト編集</string>
     <string name="quick_action__ime_ui_mode_scan">テキストをスキャン</string>
     <string name="quick_action__ime_ui_mode_scan__tooltip">印刷された文字を撮影して挿入します</string>
+    <string name="quick_action__translate">翻訳</string>
+    <string name="quick_action__translate__tooltip">入力しながらこの端末上で翻訳します</string>
     <string name="quick_action__ime_ui_mode_dictate">音声入力</string>
     <string name="quick_action__ime_ui_mode_dictate__tooltip">タップして音声入力、もう一度タップで文字起こし</string>
     <string name="quick_action__dictate_live_prompt">音声指示</string>
@@ -1303,6 +1306,10 @@
     <string name="dictate__providers_cap_chat">言い換え</string>
     <string name="dictate__providers_add_custom">自分のサーバーを追加</string>
     <string name="dictate__providers_add_custom_summary">セルフホストまたは OpenAI 互換の任意のエンドポイント — 音声認識と言い換えの両方に</string>
+    <string name="dictate__providers_add">プロバイダーを追加</string>
+    <string name="dictate__providers_search">プロバイダーを検索</string>
+    <string name="dictate__providers_filter_eu">EU</string>
+    <string name="dictate__providers_add_none">一致するプロバイダーがありません</string>
     <string name="dictate__providers_azure_endpoint">エンドポイントはポータルの「Keys and Endpoint」ページでキーの隣にあります。MAI-Transcribe が動くのは East US、West US、West US 2、North Europe、Southeast Asia、Central India だけです。</string>
     <string name="dictate__providers_ollama_no_stt">Ollama には音声認識のエンドポイントがないため、言い換えしかできません。自分のサーバーで音声入力するには、音声サーバー（Speaches、faster-whisper-server、whisper.cpp など）を動かし、「自分のサーバーを追加」から登録してください。サーバーが一切不要な端末上の認識を使うこともできます。</string>
     <string name="dictate__providers_region_title">リージョン</string>
@@ -1446,6 +1453,11 @@
     <string name="dictate__languages_summary">音声入力する言語を選択します。録音バーから素早く切り替えられます。</string>
     <string name="dictate__language_detect">自動検出</string>
     <string name="dictate__languages_active_title">使用中の言語</string>
+    <string name="dictate__languages_follow_keyboard">キーボードの言語に合わせる</string>
+    <string name="dictate__languages_follow_keyboard_summary">下でチェックされた言語なら、音声入力も切り替わります</string>
+    <string name="quick_action__dictate_switch_provider">文字起こしプロバイダー</string>
+    <string name="quick_action__dictate_switch_provider__tooltip">文字起こしプロバイダーを切り替え</string>
+    <string name="enum__space_bar_mode__transcription_provider">文字起こしプロバイダー</string>
     <string name="dictate__prompt_selection_none">なし</string>
     <string name="dictate__prompt_selection_predefined">既定</string>
     <string name="dictate__prompt_selection_custom">カスタム</string>
@@ -2336,4 +2348,23 @@
     <string name="scan__select_all">すべて選択</string>
     <string name="scan__discard">破棄</string>
     <string name="scan__approve">確定</string>
+
+    <!-- On-device translation (issue #424) -->
+    <string name="settings__translation__title">翻訳</string>
+    <string name="translate__settings_intro">端末上で直接翻訳するため、入力した内容が外部に送られることはありません。スマートバーの「翻訳」から開けます。</string>
+    <string name="translate__group_installed">ダウンロード済み</string>
+    <string name="translate__group_available">ダウンロード可能</string>
+    <string name="translate__english_included">常に利用可能</string>
+    <string name="translate__size_installed">端末内: {size}</string>
+    <string name="translate__size_download">ダウンロード: {download} · 端末内: {size}</string>
+    <string name="translate__hint">入力して翻訳</string>
+    <string name="translate__detect">言語を検出</string>
+    <string name="translate__detected">{language}（検出）</string>
+    <string name="translate__swap">言語を入れ替え</string>
+    <string name="translate__no_languages">まだ言語がダウンロードされていません</string>
+    <string name="translate__get_languages">言語をダウンロード</string>
+    <string name="translate__more_languages">その他の言語</string>
+    <string name="translate__missing">{language}はダウンロードされていません</string>
+    <string name="translate__failed">翻訳に失敗しました</string>
+    <string name="translate__unsupported">この端末では翻訳を利用できません</string>
 </resources>
