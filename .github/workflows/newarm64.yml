@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    name: Build arm64-v8a
+    name: Build ARM64
     runs-on: ubuntu-latest
 
     steps:
@@ -36,9 +36,21 @@ jobs:
         run: |
           ./gradlew assembleRelease \
             -PtargetAbi=arm64-v8a \
-            --configuration-cache \
-            --parallel \
+            --no-configuration-cache \
             --stacktrace
+
+      - name: Check Release APK
+        run: |
+          APK=$(find app/build/outputs/apk/release \
+            -name "*.apk" | head -1)
+
+          if [ -z "$APK" ]; then
+            echo "ERROR: Release APK was not found."
+            exit 1
+          fi
+
+          echo "Release APK found:"
+          echo "$APK"
 
       - name: Restore signing keystore
         env:
@@ -52,9 +64,11 @@ jobs:
           echo "$KEYSTORE_B64" | base64 --decode > release.keystore
 
           if [ ! -s release.keystore ]; then
-            echo "ERROR: Failed to restore release.keystore."
+            echo "ERROR: release.keystore could not be restored."
             exit 1
           fi
+
+          echo "Signing keystore restored successfully."
 
       - name: Sign and optimize ARM64 APK
         env:
@@ -86,8 +100,13 @@ jobs:
           APK=$(find app/build/outputs/apk/release \
             -name "*.apk" | head -1)
 
-          if [ -z "$APK" ]; then
-            echo "ERROR: Release APK was not found."
+          if [ -z "$APKSIGNER" ]; then
+            echo "ERROR: apksigner was not found."
+            exit 1
+          fi
+
+          if [ -z "$ZIPALIGN" ]; then
+            echo "ERROR: zipalign was not found."
             exit 1
           fi
 
@@ -109,6 +128,8 @@ jobs:
           "$APKSIGNER" verify \
             --verbose \
             "DictateKeyboard-arm64-v8a.apk"
+
+          echo "ARM64 APK signed and verified successfully."
 
       - name: Upload ARM64 APK
         uses: actions/upload-artifact@v4
