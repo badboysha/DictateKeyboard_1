@@ -1,11 +1,19 @@
-name: Build Release APK
+name: Build ARM64 + ARMv7 Release APKs
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build ${{ matrix.abi }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        abi:
+          - arm64-v8a
+          - armeabi-v7a
 
     steps:
       - name: Checkout
@@ -21,8 +29,9 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install NDK
-        run: sdkmanager --install "ndk;27.2.12479018"
+      - name: Install Android NDK
+        run: |
+          sdkmanager --install "ndk;27.2.12479018"
 
       - name: Prepare Sherpa-ONNX
         run: |
@@ -30,10 +39,14 @@ jobs:
           chmod +x tools/fetch-sherpa-onnx.sh
           ./tools/fetch-sherpa-onnx.sh
 
-      - name: Build ARM64 APK
-        run: ./gradlew assembleRelease -PtargetAbi=arm64-v8a
+      - name: Build ${{ matrix.abi }} Release APK
+        run: |
+          ./gradlew assembleRelease \
+            -PtargetAbi=${{ matrix.abi }} \
+            --no-configuration-cache \
+            --stacktrace
 
-      - name: Sign APK
+      - name: Sign and optimize ${{ matrix.abi }} APK
         run: |
           keytool -genkeypair \
             -keystore release.keystore \
@@ -54,19 +67,29 @@ jobs:
           APK=$(find app/build/outputs/apk/release \
             -name "*.apk" | head -1)
 
-          "$ZIPALIGN" -f -p 4 "$APK" aligned.apk
+          if [ -z "$APK" ]; then
+            echo "ERROR: Release APK was not found."
+            exit 1
+          fi
+
+          "$ZIPALIGN" \
+            -f \
+            -p \
+            4 \
+            "$APK" \
+            aligned.apk
 
           "$APKSIGNER" sign \
             --ks release.keystore \
             --ks-key-alias dictate \
             --ks-pass pass:android \
             --key-pass pass:android \
-            --out DictateKeyboard-arm64-v8a.apk \
+            --out "DictateKeyboard-${{ matrix.abi }}.apk" \
             aligned.apk
 
-      - name: Upload ARM64 APK
+      - name: Upload ${{ matrix.abi }} APK
         uses: actions/upload-artifact@v4
         with:
-          name: DictateKeyboard-arm64-v8a
-          path: DictateKeyboard-arm64-v8a.apk
+          name: DictateKeyboard-${{ matrix.abi }}
+          path: DictateKeyboard-${{ matrix.abi }}.apk
           if-no-files-found: error
