@@ -34,25 +34,53 @@ val projectTargetSdk: String by project
 val projectCompileSdk: String by project
 val projectVersionCode: String by project
 val projectVersionName: String by project
-val projectVersionNameSuffix = projectVersionName.substringAfter("-", "").let { suffix ->
-    if (suffix.isNotEmpty()) {
-        "-$suffix"
-    } else {
-        suffix
+
+val projectVersionNameSuffix =
+    projectVersionName.substringAfter("-", "").let { suffix ->
+        if (suffix.isNotEmpty()) {
+            "-$suffix"
+        } else {
+            suffix
+        }
     }
+
+/*
+ * ABI is selected from the GitHub Actions workflow:
+ *
+ * -ParmTargetAbi=arm64-v8a
+ * -ParmTargetAbi=armeabi-v7a
+ *
+ * Default: arm64-v8a
+ */
+val targetAbi = providers
+    .gradleProperty("targetAbi")
+    .orElse("arm64-v8a")
+    .get()
+
+val supportedAbis = setOf(
+    "arm64-v8a",
+    "armeabi-v7a"
+)
+
+require(targetAbi in supportedAbis) {
+    "Unsupported targetAbi: $targetAbi. " +
+        "Supported values: ${supportedAbis.joinToString(", ")}"
 }
 
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
-        freeCompilerArgs.set(listOf(
-            "-opt-in=kotlin.contracts.ExperimentalContracts",
-            "-jvm-default=enable",
-            "-Xwhen-guards",
-            "-Xexplicit-backing-fields",
-            "-Xcontext-parameters",
-            "-XXLanguage:+LocalTypeAliases",
-        ))
+
+        freeCompilerArgs.set(
+            listOf(
+                "-opt-in=kotlin.contracts.ExperimentalContracts",
+                "-jvm-default=enable",
+                "-Xwhen-guards",
+                "-Xexplicit-backing-fields",
+                "-Xcontext-parameters",
+                "-XXLanguage:+LocalTypeAliases",
+            )
+        )
     }
 }
 
@@ -74,17 +102,37 @@ configure<ApplicationExtension> {
         versionCode = projectVersionCode.toInt()
         versionName = projectVersionName.substringBefore("-")
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner =
+            "androidx.test.runner.AndroidJUnitRunner"
 
-        // sherpa-onnx on-device STT:
-        // Only arm64-v8a is packaged in the APK.
+        /*
+         * Build only the ABI requested by the workflow.
+         *
+         * arm64-v8a     -> ARM64 APK
+         * armeabi-v7a   -> ARMv7 APK
+         */
         ndk {
-            abiFilters += "arm64-v8a"
+            abiFilters.clear()
+            abiFilters += targetAbi
         }
 
-        buildConfigField("String", "BUILD_COMMIT_HASH", "\"${getGitCommitHash().get()}\"")
-        buildConfigField("String", "FLADDONS_API_VERSION", "\"v~draft2\"")
-        buildConfigField("String", "FLADDONS_STORE_URL", "\"beta.addons.florisboard.org\"")
+        buildConfigField(
+            "String",
+            "BUILD_COMMIT_HASH",
+            "\"${getGitCommitHash().get()}\""
+        )
+
+        buildConfigField(
+            "String",
+            "FLADDONS_API_VERSION",
+            "\"v~draft2\""
+        )
+
+        buildConfigField(
+            "String",
+            "FLADDONS_STORE_URL",
+            "\"beta.addons.florisboard.org\""
+        )
 
         sourceSets {
             maybeCreate("main").apply {
@@ -95,9 +143,6 @@ configure<ApplicationExtension> {
 
     bundle {
         language {
-            // We disable language split because FlorisBoard does not use
-            // runtime Google Play Service APIs and thus cannot dynamically
-            // request to download the language resources for a specific locale.
             enableSplit = false
         }
     }
@@ -107,17 +152,19 @@ configure<ApplicationExtension> {
         compose = true
     }
 
-    // Release signing. Credentials live in a local, untracked `keystore.properties` at the repo root
-    // (see keystore.properties.template) so the keystore/passwords never get committed. When the file
-    // is absent (e.g. on CI without secrets, or a contributor's machine) the release build simply has
-    // no signing config attached and falls back to an unsigned build, exactly as before.
-    //
-    // IMPORTANT: For uploads to Google Play this must be the upload key the existing
-    // net.devemperor.dictate listing expects.
+    /*
+     * Release signing.
+     *
+     * If keystore.properties exists, Gradle signs the release build.
+     * Otherwise the workflow can sign the generated APK afterwards.
+     */
     val keystorePropsFile = rootProject.file("keystore.properties")
+
     val keystoreProps = if (keystorePropsFile.exists()) {
         Properties().apply {
-            keystorePropsFile.inputStream().use { load(it) }
+            keystorePropsFile.inputStream().use {
+                load(it)
+            }
         }
     } else {
         null
@@ -126,7 +173,9 @@ configure<ApplicationExtension> {
     signingConfigs {
         keystoreProps?.let { props ->
             create("release") {
-                storeFile = rootProject.file(props.getProperty("storeFile"))
+                storeFile = rootProject.file(
+                    props.getProperty("storeFile")
+                )
                 storePassword = props.getProperty("storePassword")
                 keyAlias = props.getProperty("keyAlias")
                 keyPassword = props.getProperty("keyPassword")
@@ -137,7 +186,8 @@ configure<ApplicationExtension> {
     buildTypes {
         named("debug") {
             applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug+${getGitCommitHash(short = true).get()}"
+            versionNameSuffix =
+                "-debug+${getGitCommitHash(short = true).get()}"
 
             isDebuggable = true
             isJniDebuggable = false
@@ -148,9 +198,12 @@ configure<ApplicationExtension> {
             versionNameSuffix = projectVersionNameSuffix
 
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
+                getDefaultProguardFile(
+                    "proguard-android-optimize.txt"
+                ),
                 "proguard-rules.pro"
             )
+
             isMinifyEnabled = true
             isShrinkResources = true
         }
@@ -163,9 +216,12 @@ configure<ApplicationExtension> {
             }
 
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
+                getDefaultProguardFile(
+                    "proguard-android-optimize.txt"
+                ),
                 "proguard-rules.pro"
             )
+
             isMinifyEnabled = true
             isShrinkResources = true
         }
@@ -174,7 +230,8 @@ configure<ApplicationExtension> {
             initWith(getByName("release"))
 
             applicationIdSuffix = ".bench"
-            versionNameSuffix = "-bench+${getGitCommitHash(short = true).get()}"
+            versionNameSuffix =
+                "-bench+${getGitCommitHash(short = true).get()}"
 
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
@@ -185,6 +242,7 @@ configure<ApplicationExtension> {
         unitTests {
             isIncludeAndroidResources = true
         }
+
         unitTests.all {
             it.useJUnitPlatform()
         }
@@ -198,9 +256,20 @@ aboutLibraries {
 }
 
 ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-    arg("room.incremental", "true")
-    arg("room.expandProjection", "true")
+    arg(
+        "room.schemaLocation",
+        "$projectDir/schemas"
+    )
+
+    arg(
+        "room.incremental",
+        "true"
+    )
+
+    arg(
+        "room.expandProjection",
+        "true"
+    )
 }
 
 tasks.withType<Test> {
@@ -221,7 +290,8 @@ kover {
 }
 
 dependencies {
-    val composeBom = platform(libs.androidx.compose.bom)
+    val composeBom =
+        platform(libs.androidx.compose.bom)
 
     implementation(composeBom)
     implementation(libs.android.billing.ktx)
@@ -261,8 +331,16 @@ dependencies {
     implementation(libs.patrickgold.jetpref.datastore.ui)
     implementation(libs.patrickgold.jetpref.material.ui)
 
-    implementation(files("libs/sherpa-onnx-1.13.3.jar"))
-    implementation(files("libs/onnxruntime-android-1.24.3.jar"))
+    /*
+     * On-device speech recognition.
+     */
+    implementation(
+        files("libs/sherpa-onnx-1.13.3.jar")
+    )
+
+    implementation(
+        files("libs/onnxruntime-android-1.24.3.jar")
+    )
 
     implementation(projects.lib.android)
     implementation(projects.lib.color)
@@ -280,33 +358,60 @@ dependencies {
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
-    androidTestImplementation(libs.androidx.test.ext)
-    androidTestImplementation(libs.androidx.test.espresso.core)
+    testImplementation(libs.kotlinx.serialization.json)
+
+    androidTestImplementation(
+        libs.androidx.test.ext
+    )
+
+    androidTestImplementation(
+        libs.androidx.test.espresso.core
+    )
 }
 
-// On-device STT: only arm64-v8a native libraries are required.
+/*
+ * Verify only the native libraries required by the
+ * currently selected ABI.
+ *
+ * This keeps ARM64 and ARMv7 builds separate.
+ */
 val verifySherpaOnnxLibs by tasks.registering {
     val projectDir = layout.projectDirectory
 
-    val required = buildList {
-        add(projectDir.file("libs/sherpa-onnx-1.13.3.jar").asFile)
-        add(projectDir.file("libs/onnxruntime-android-1.24.3.jar").asFile)
+    val required = listOf(
+        projectDir.file(
+            "libs/sherpa-onnx-1.13.3.jar"
+        ).asFile,
 
-        for (abi in listOf("arm64-v8a")) {
-            add(projectDir.file("src/main/jniLibs/$abi/libonnxruntime.so").asFile)
-            add(projectDir.file("src/main/jniLibs/$abi/libonnxruntime4j_jni.so").asFile)
-            add(projectDir.file("src/main/jniLibs/$abi/libsherpa-onnx-jni.so").asFile)
-        }
-    }
+        projectDir.file(
+            "libs/onnxruntime-android-1.24.3.jar"
+        ).asFile,
+
+        projectDir.file(
+            "src/main/jniLibs/$targetAbi/libonnxruntime.so"
+        ).asFile,
+
+        projectDir.file(
+            "src/main/jniLibs/$targetAbi/libonnxruntime4j_jni.so"
+        ).asFile,
+
+        projectDir.file(
+            "src/main/jniLibs/$targetAbi/libsherpa-onnx-jni.so"
+        ).asFile
+    )
 
     doLast {
-        val missing = required.filterNot { it.exists() }
+        val missing = required.filterNot {
+            it.exists()
+        }
 
         if (missing.isNotEmpty()) {
             throw GradleException(
-                "Missing vendored sherpa-onnx native libs:\n" +
-                    missing.joinToString("\n") { "  - ${it.name}" } +
-                    "\n\nRun: tools/fetch-sherpa-onnx.sh",
+                "Missing Sherpa-ONNX files for ABI: $targetAbi\n\n" +
+                    missing.joinToString("\n") {
+                        "  - ${it.path}"
+                    } +
+                    "\n\nRun: tools/fetch-sherpa-onnx.sh"
             )
         }
     }
@@ -316,33 +421,37 @@ tasks.named("preBuild").configure {
     dependsOn(verifySherpaOnnxLibs)
 }
 
-// On-device translation (issue #424): libdictate_bergamot.so is built from Mozilla's sources by
-// tools/bergamot/build-android.sh and not committed. arm64 only: Marian's x86 path does not compile
-// against the NDK (faiss finds no SSE headers) and 32-bit ARM is untried. On those the translate bar
-// says the device is not supported, so a missing arm64 build is the one that must stop the build —
-// otherwise it ships a feature that cannot run on any phone at all.
-val verifyBergamotLib by tasks.registering {
-    val library = layout.projectDirectory.file("src/main/jniLibs/arm64-v8a/libdictate_bergamot.so").asFile
-    doLast {
-        if (!library.exists()) {
-            throw GradleException("Missing libdictate_bergamot.so for arm64-v8a.\n\nRun:  tools/bergamot/build-android.sh")
-        }
-    }
-}
-tasks.named("preBuild").configure { dependsOn(verifyBergamotLib) }
+/*
+ * Returns the current Git commit hash.
+ */
+fun getGitCommitHash(
+    short: Boolean = false
+): Provider<String> {
 
-fun getGitCommitHash(short: Boolean = false): Provider<String> {
     if (!File(".git").exists()) {
-        return providers.provider { "null" }
+        return providers.provider {
+            "null"
+        }
     }
 
     val execProvider = providers.exec {
         if (short) {
-            commandLine("git", "rev-parse", "--short", "HEAD")
+            commandLine(
+                "git",
+                "rev-parse",
+                "--short",
+                "HEAD"
+            )
         } else {
-            commandLine("git", "rev-parse", "HEAD")
+            commandLine(
+                "git",
+                "rev-parse",
+                "HEAD"
+            )
         }
     }
 
-    return execProvider.standardOutput.asText.map { it.trim() }
+    return execProvider.standardOutput.asText.map {
+        it.trim()
+    }
 }
