@@ -1,66 +1,78 @@
-name: Generate Signing Keystore
+name: Build ARM64 Release APK
 
 on:
   workflow_dispatch:
 
 jobs:
-  generate:
-    name: Generate Release Keystore
+  build:
+    name: Build ARM64
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Set up JDK 17
         uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
-      - name: Generate signing keystore
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android NDK
+        run: sdkmanager --install "ndk;27.2.12479018"
+
+      - name: Prepare Sherpa-ONNX
         run: |
-          set -e
+          chmod +x gradlew tools/fetch-sherpa-onnx.sh
+          ./tools/fetch-sherpa-onnx.sh
 
-          KEYSTORE_PASSWORD=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)
-          KEY_PASSWORD="$KEYSTORE_PASSWORD"
-          KEY_ALIAS="dictate"
-
-          echo "::add-mask::$KEYSTORE_PASSWORD"
-
-          keytool -genkeypair \
-            -keystore release.keystore \
-            -alias "$KEY_ALIAS" \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass "$KEYSTORE_PASSWORD" \
-            -keypass "$KEY_PASSWORD" \
-            -dname "CN=DictateKeyboard, OU=Android, O=DictateKeyboard, L=Unknown, ST=Unknown, C=IN"
-
-          echo "$KEYSTORE_PASSWORD" > keystore-password.txt
-          echo "$KEY_ALIAS" > key-alias.txt
-          echo "$KEY_PASSWORD" > key-password.txt
-
-          base64 -w 0 release.keystore > keystore-base64.txt
-
-          echo "Keystore generated successfully."
-          echo "Alias: $KEY_ALIAS"
-          echo "Keystore and signing information prepared as artifacts."
-
-      - name: Verify keystore
+      - name: Build ARM64 Release
         run: |
-          keytool -list \
-            -keystore release.keystore \
-            -storepass "$(cat keystore-password.txt)" \
-            -alias "$(cat key-alias.txt)"
+          ./gradlew assembleRelease \
+            -PtargetAbi=arm64-v8a \
+            --no-configuration-cache \
+            --build-cache
 
-      - name: Upload signing files
+      - name: Sign ARM64 APK
+        env:
+          KEYSTORE_B64: ${{ secrets.DICTATE_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.DICTATE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.DICTATE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.DICTATE_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 --decode > release.keystore
+
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+
+          if [ -z "$APK" ]; then
+            echo "ERROR: Release APK not found."
+            exit 1
+          fi
+
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign | sort -V | tail -1)
+
+          "$ZIPALIGN" -f -p 4 \
+            "$APK" \
+            aligned.apk
+
+          "$APKSIGNER" sign \
+            --ks release.keystore \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --key-pass "pass:$KEY_PASSWORD" \
+            --out "DictateKeyboard-arm64-v8a.apk" \
+            aligned.apk
+
+          "$APKSIGNER" verify "DictateKeyboard-arm64-v8a.apk"
+
+      - name: Upload ARM64 APK
         uses: actions/upload-artifact@v4
         with:
-          name: DictateKeyboard-Signing-Keystore
-          path: |
-            release.keystore
-            keystore-base64.txt
-            keystore-password.txt
-            key-alias.txt
-            key-password.txt
-            retention-days: 1
+          name: DictateKeyboard-arm64-v8a
+          path: DictateKeyboard-arm64-v8a.apk
           if-no-files-found: error
