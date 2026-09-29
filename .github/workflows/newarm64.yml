@@ -1,4 +1,4 @@
-name: ARM64 Signed Release APK
+name: Build ARM64 Signed Release APK
 
 on:
   workflow_dispatch:
@@ -18,29 +18,15 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-
-      - name: Install Android NDK
-        run: |
-          sdkmanager --install "ndk;27.2.12479018"
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> "$GITHUB_ENV"
-
       - name: Make scripts executable
         run: |
           chmod +x gradlew
           chmod +x tools/fetch-sherpa-onnx.sh
-          chmod +x tools/bergamot/build-android.sh
-
-      - name: Build Bergamot
-        run: ./tools/bergamot/build-android.sh
-
-      - name: Fetch Sherpa-ONNX
+      - name: Fetch Sherpa-ONNX libraries
         run: ./tools/fetch-sherpa-onnx.sh
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease
 
       - name: Generate signing key
         run: |
@@ -54,41 +40,44 @@ jobs:
             -storepass android \
             -keypass android \
             -dname "CN=DictateKeyboard, OU=Android, O=DictateKeyboard, L=Unknown, ST=Unknown, C=IN"
-
       - name: Sign APK
         run: |
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" \
-            -name apksigner \
-            | sort -V \
-            | tail -1)
-
-          APK=$(find app/build/outputs/apk/release \
-            -name "*.apk" \
-            | head -1)
-
-          "$APKSIGNER" sign \
-            --ks release.keystore \
-            --ks-key-alias dictate \
-            --ks-pass pass:android \
-            --key-pass pass:android \
-            "$APK"
-
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          for APK in app/build/outputs/apk/release/*.apk; do
+            "$APKSIGNER" sign \
+              --ks release.keystore \
+              --ks-key-alias dictate \
+              --ks-pass pass:android \
+              --key-pass pass:android \
+              "$APK"
+          done
+      - name: Verify ARM64 only
+        run: |
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "=== Native libraries in APK ==="
+          unzip -l "$APK" | grep "lib/" || true
+          echo "=== Checking unwanted ABIs ==="
+          if unzip -l "$APK" | grep -E "lib/(armeabi-v7a|x86|x86_64)/"; then
+            echo "ERROR: Unwanted ABI found!"
+            exit 1
+          fi
+          echo "ARM64-only check passed."
       - name: Verify signature
         run: |
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" \
-            -name apksigner \
-            | sort -V \
-            | tail -1)
-
-          APK=$(find app/build/outputs/apk/release \
-            -name "*.apk" \
-            | head -1)
-
-          "$APKSIGNER" verify "$APK"
-
-      - name: Upload APK
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          "$APKSIGNER" verify --verbose "$APK"
+          echo "Signature verification passed."
+      - name: Rename APK
+        run: |
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          mv "$APK" \
+            "app/build/outputs/apk/release/DictateKeyboard-arm64-signed.apk"
+          echo "Final APK:"
+          ls -lh app/build/outputs/apk/release/
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
           name: DictateKeyboard-ARM64-Signed-Release
-          path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: Build
+          path: app/build/outputs/apk/release/DictateKeyboard-arm64-signed.apk
+          if-no-files-found: error
