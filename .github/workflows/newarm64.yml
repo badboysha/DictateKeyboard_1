@@ -1,19 +1,12 @@
-name: Build ARM64 + ARMv7 Release APKs
+name: Build ARM64 Release APK
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build ${{ matrix.abi }}
+    name: Build arm64-v8a
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        abi:
-          - arm64-v8a
-          - armeabi-v7a
 
     steps:
       - name: Checkout
@@ -39,25 +32,35 @@ jobs:
           chmod +x tools/fetch-sherpa-onnx.sh
           ./tools/fetch-sherpa-onnx.sh
 
-      - name: Build ${{ matrix.abi }} Release APK
+      - name: Build ARM64 Release APK
         run: |
           ./gradlew assembleRelease \
-            -PtargetAbi=${{ matrix.abi }} \
+            -PtargetAbi=arm64-v8a \
             --no-configuration-cache \
             --stacktrace
 
-      - name: Sign and optimize ${{ matrix.abi }} APK
+      - name: Restore signing keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.DICTATE_KEYSTORE_B64 }}
         run: |
-          keytool -genkeypair \
-            -keystore release.keystore \
-            -alias dictate \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass android \
-            -keypass android \
-            -dname "CN=DictateKeyboard, OU=Android, O=DictateKeyboard, L=Unknown, ST=Unknown, C=IN"
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "ERROR: DICTATE_KEYSTORE_B64 secret is missing."
+            exit 1
+          fi
 
+          echo "$KEYSTORE_B64" | base64 --decode > release.keystore
+
+          if [ ! -s release.keystore ]; then
+            echo "ERROR: Failed to restore release.keystore."
+            exit 1
+          fi
+
+      - name: Sign and optimize ARM64 APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.DICTATE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.DICTATE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.DICTATE_KEY_PASSWORD }}
+        run: |
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" \
             -name apksigner | sort -V | tail -1)
 
@@ -72,6 +75,16 @@ jobs:
             exit 1
           fi
 
+          if [ -z "$APKSIGNER" ]; then
+            echo "ERROR: apksigner was not found."
+            exit 1
+          fi
+
+          if [ -z "$ZIPALIGN" ]; then
+            echo "ERROR: zipalign was not found."
+            exit 1
+          fi
+
           "$ZIPALIGN" \
             -f \
             -p \
@@ -81,15 +94,19 @@ jobs:
 
           "$APKSIGNER" sign \
             --ks release.keystore \
-            --ks-key-alias dictate \
-            --ks-pass pass:android \
-            --key-pass pass:android \
-            --out "DictateKeyboard-${{ matrix.abi }}.apk" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --key-pass "pass:$KEY_PASSWORD" \
+            --out "DictateKeyboard-arm64-v8a.apk" \
             aligned.apk
 
-      - name: Upload ${{ matrix.abi }} APK
+          "$APKSIGNER" verify \
+            --verbose \
+            "DictateKeyboard-arm64-v8a.apk"
+
+      - name: Upload ARM64 APK
         uses: actions/upload-artifact@v4
         with:
-          name: DictateKeyboard-${{ matrix.abi }}
-          path: DictateKeyboard-${{ matrix.abi }}.apk
+          name: DictateKeyboard-arm64-v8a
+          path: DictateKeyboard-arm64-v8a.apk
           if-no-files-found: error
