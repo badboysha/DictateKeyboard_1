@@ -1,4 +1,4 @@
-name: Build ARM64 Signed Release APK
+name: Signed Release APK
 
 on:
   workflow_dispatch:
