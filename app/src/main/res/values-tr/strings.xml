@@ -735,6 +735,7 @@
     <string name="pref__clipboard__trim_on_copy__label" comment="Preference title, keep short">Kopyalarken kırp</string>
     <string name="pref__clipboard__trim_on_copy__summary" comment="Preference summary, keep short (one line)">Baştaki ve sondaki boşlukları ve satır sonlarını siler</string>
     <string name="pref__clipboard__suggestion_enabled__summary" comment="Preference summary">Daha önce kopyalanan pano içeriğini öner</string>
+    <string name="pref__clipboard__suggestion_show_extracted__label" comment="Preference title (switch) in the group Clipboard suggestions, keep short (one line): whether the links, email addresses and phone numbers found inside a copied text are also offered as suggestions of their own, next to the whole text">Bağlantılar, e-postalar, numaralar</string>
     <string name="pref__clipboard__num_history_grid_columns__label">Izgara sütun sayısı</string>
     <string name="pref__clipboard__suggestion_timeout__label" comment="Preference title; Translators: This should form a sentence together with `pref__clipboard__suggestion_timeout__summary` and is the first part">Pano önerilerini şununla sınırla</string>
     <string name="pref__clipboard__suggestion_timeout__summary" comment="Preference summary; Translators: This should form a sentence together with `pref__clipboard__suggestion_timeout__label` and is the second part">Son {v} saniye içinde kopyalanan ögeler</string>
@@ -1210,6 +1211,11 @@
     <string name="dictate__floating_button_show_with_keyboard_summary_on">Düğme, Dictate klavyesi etkinken de görünür.</string>
     <string name="dictate__floating_button_show_with_keyboard_summary_off">Dictate klavyesi etkinken gizlenir, çünkü onda zaten bir mikrofon tuşu var.</string>
     <string name="dictate__action_continue_recording">Kaydı sürdür</string>
+    <string name="dictate__a11y_mic_hold_local">Cihazda yazıya dök</string>
+    <string name="smartbar__a11y_show_actions">Eylemleri göster</string>
+    <string name="smartbar__a11y_show_suggestions">Önerileri göster</string>
+    <string name="smartbar__a11y_show_more_actions">Daha fazla eylem göster</string>
+    <string name="smartbar__a11y_hide_more_actions">Ek eylemleri gizle</string>
     <string name="dictate__floating_button_auto_dim_summary_off">Her zaman tam görünür kalır.</string>
     <string name="dictate__floating_button_auto_dim_summary_on">Birkaç saniye sonra küçük bir noktaya küçülür; geri getirmek için dokunun.</string>
     <string name="dictate__floating_button_auto_dim_title">Boştayken soluklaştır</string>
