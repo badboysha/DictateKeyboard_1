@@ -1163,9 +1163,10 @@
     <string name="dictate__floating_button_disclosure_continue">Einstellungen öffnen</string>
     <string name="dictate__floating_button_mic_title">Mikrofon-Zugriff</string>
     <string name="dictate__floating_button_mic_summary">Nötig, um deine Stimme aufzunehmen · tippen, um zu erlauben</string>
-    <string name="dictate__floating_button_show_with_keyboard_title">Mit Dictate-Tastatur anzeigen</string>
-    <string name="dictate__floating_button_show_with_keyboard_summary_on">Der Button erscheint auch, während die Dictate-Tastatur aktiv ist.</string>
-    <string name="dictate__floating_button_show_with_keyboard_summary_off">Ausgeblendet, während die Dictate-Tastatur aktiv ist, da diese bereits eine Mikrofontaste hat.</string>
+    <string name="dictate__floating_button_show_when_title">Wann anzeigen</string>
+    <string name="dictate__floating_button_show_when_field">Sobald ein Textfeld ausgewählt ist</string>
+    <string name="dictate__floating_button_show_when_keyboard">Nur bei geöffneter Tastatur</string>
+    <string name="dictate__floating_button_show_when_dictate_keyboard">Auch mit der Dictate-Tastatur</string>
     <string name="dictate__floating_button_apps_title">App-Sichtbarkeit</string>
     <string name="dictate__floating_button_apps_summary_all">In jeder App</string>
     <string name="dictate__floating_button_apps_summary_only">Nur in {n} Apps</string>
@@ -1753,7 +1754,7 @@
     <string name="emoji__row__open_panel">Alle Emojis öffnen</string>
     <string name="emoji__search__no_results">Keine passenden Emojis</string>
     <string name="pref__suggestion__math_suggestions__label" comment="Preference title">Rechner in der Vorschlagsleiste</string>
-    <string name="pref__suggestion__math_suggestions__summary" comment="Preference summary">Rechenaufgabe und = eintippen, das Ergebnis wird vorgeschlagen</string>
+    <string name="pref__suggestion__math_suggestions__summary" comment="Preference summary">Rechenaufgabe eintippen, das Ergebnis wird vorgeschlagen</string>
     <string name="pref__suggestion__api30_inline_suggestions_enabled__label">Autofill-Vorschläge des Systems</string>
     <string name="pref__suggestion__block_possibly_offensive__summary">Verhindert, dass möglicherweise anstößige Wörter beim Tippen vorgeschlagen werden</string>
     <string name="quick_action__dictate_reinsert">Verlauf</string>
