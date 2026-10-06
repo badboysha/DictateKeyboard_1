@@ -1306,7 +1306,7 @@
     <string name="dictate__providers_field_realtime_model">Modelo em tempo real</string>
     <string name="dictate__providers_custom_realtime">Transmissão em tempo real</string>
     <string name="dictate__providers_custom_realtime_summary">Este servidor usa o protocolo realtime da OpenAI em /v1/realtime</string>
-    <string name="dictate__providers_custom_warm_up">Acordar antes de reformular</string>
+    <string name="dictate__providers_custom_warm_up">Acordar com antecedência</string>
     <string name="dictate__providers_custom_warm_up_summary">Aciona o servidor cedo para que uma máquina dormindo tenha tempo de ligar</string>
     <string name="dictate__providers_realtime_model_default">Padrão</string>
     <string name="dictate__instant_recording_title">Gravação instantânea</string>
@@ -1584,6 +1584,8 @@
     <string name="dictate__mappings_wholeword_summary">Só substitui palavras isoladas, não correspondências dentro de palavras maiores.</string>
     <string name="dictate__mappings_wholeword_title">Somente palavra inteira</string>
     <string name="dictate__wear_standalone_summary">Envie sua chave de API para o relógio para ditar sem o celular por perto.</string>
+    <string name="dictate__wear_tether_notif_channel_name">Ditado do relógio</string>
+    <string name="dictate__wear_tether_notif_title">Transcrevendo para o seu relógio…</string>
     <string name="dictate__wear_standalone_title">Sincronizar chave com o relógio</string>
     <string name="emoji__search__hint">Pesquisar emoji</string>
     <string name="emoji__row__open_panel">Abrir todos os emojis</string>

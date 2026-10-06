@@ -1491,7 +1491,7 @@
     <string name="dictate__providers_field_realtime_model">Echtzeit-Modell</string>
     <string name="dictate__providers_custom_realtime">Echtzeit-Streaming</string>
     <string name="dictate__providers_custom_realtime_summary">Dieser Server spricht das OpenAI-Realtime-Protokoll unter /v1/realtime</string>
-    <string name="dictate__providers_custom_warm_up">Vor dem Umformulieren wecken</string>
+    <string name="dictate__providers_custom_warm_up">Früh wecken</string>
     <string name="dictate__providers_custom_warm_up_summary">Stupst den Server früh an, damit eine schlafende Maschine hochfahren kann</string>
     <string name="dictate__providers_realtime_model_default">Standard</string>
     <string name="dictate__instant_recording_title">Sofortaufnahme</string>
@@ -1749,6 +1749,8 @@
     <string name="dictate__mappings_wholeword_summary">Nur eigenständige Wörter ersetzen, keine Treffer innerhalb längerer Wörter.</string>
     <string name="dictate__mappings_wholeword_title">Nur ganzes Wort</string>
     <string name="dictate__wear_standalone_summary">Sende deinen API-Key an die Uhr, damit sie auch ohne Handy in der Nähe diktieren kann.</string>
+    <string name="dictate__wear_tether_notif_channel_name">Diktat von der Uhr</string>
+    <string name="dictate__wear_tether_notif_title">Transkribiere für deine Uhr…</string>
     <string name="dictate__wear_standalone_title">Schlüssel mit Uhr synchronisieren</string>
     <string name="emoji__search__hint">Emoji suchen</string>
     <string name="emoji__row__open_panel">Alle Emojis öffnen</string>

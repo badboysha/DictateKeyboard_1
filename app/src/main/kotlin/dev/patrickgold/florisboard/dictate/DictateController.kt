@@ -108,6 +108,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import java.io.File
 import java.text.NumberFormat
 import java.util.Locale
@@ -284,8 +285,8 @@ object DictateController {
     /** The user's saved prompts (shared `prompts.db`), refreshed via [refreshPrompts]; drives the Smartbar prompt chips. */
     val prompts: StateFlow<List<PromptModel>> = _prompts.asStateFlow()
 
-    /** When a sleeping rewording server was last poked awake (#189); see [warmUpRewordingServer]. */
-    private var lastWarmUpAtMs = 0L
+    /** When each sleeping self-hosted server was last poked awake (#189), by base URL; see [warmUp]. */
+    private val lastWarmUpAtMs = mutableMapOf<String, Long>()
 
     private val _pendingPrompts = MutableStateFlow<List<PromptModel>>(emptyList())
     /**
@@ -318,6 +319,18 @@ object DictateController {
     private var realtimeClosed: CompletableDeferred<Unit>? = null
     private var realtimeContext: Context? = null     // app context to edit the field's provisional text
     private val realtimeShown = StringBuilder()       // text currently committed to the field this session
+
+    /**
+     * The separator decided for the dictation currently in the field — a space or nothing (issue #443),
+     * see [leadFor]. Decided once, at the dictation's first write: by its second, the text in front of the
+     * cursor is our own. While [realtimeShown] holds a preview it begins with this, so the diff, the
+     * finalize and the cancel all carry the separator along without knowing about it.
+     */
+    private var dictationLead = ""
+
+    /** The separator in front of the last committed dictation, so the bubble's undo takes it back too. */
+    private var lastDictationLead = ""
+
     /**
      * Everything the stream has produced so far, whether or not any of it was put into the field (#345).
      *
@@ -345,6 +358,10 @@ object DictateController {
     private val segmentMutex = Mutex()        // orders index assignment + rotate + the commit drain
     private var segmentInFlightCount = 0      // segments cut but not yet committed
     private var segmentStopped = false        // stop requested; finish once the queue drains
+    // Moves on whenever a session ends or gives up on its pending segments. A segment job carries the
+    // value it was cut under, and a result from another one is dropped: it belongs to a dictation that is
+    // over, and the maps and the field it would write into now belong to the next one (#172).
+    private var segmentGeneration = 0
     private var segmentRecordedSeconds = 0L
     private var segmentVad: LiveSpeechSplitter? = null  // live VAD auto-split, when enabled (Phase 2)
     private val segmentAudioFiles = HashMap<Int, File>()  // kept segment WAVs (index -> file) for history merge
@@ -698,7 +715,7 @@ object DictateController {
      */
     internal const val AUDIO_LEVEL_SAMPLE_MS = 50L
 
-    /** Shortest gap between two wake-up pokes at a sleeping rewording server (#189). */
+    /** Shortest gap between two wake-up pokes at the same sleeping server (#189). */
     private const val WARM_UP_THROTTLE_MS = 60_000L
 
     /** Cumulative recorded audio (seconds) after which the rate / donate nudges appear (roadmap 9.7/9.8). */
@@ -1368,6 +1385,12 @@ object DictateController {
      */
     fun cancelTranscription() {
         if (_state.value !is UiState.Transcribing) return
+        // A stopped long-form dictation has no transcribeJob to cancel; its work is the segment jobs.
+        val segmentContext = realtimeContext
+        if (segmentedActive && segmentContext != null) {
+            abandonPendingSegments(segmentContext)
+            return
+        }
         transcribeJob?.cancel()
         transcribeJob = null
         _pendingPrompts.value = emptyList()
@@ -1418,7 +1441,10 @@ object DictateController {
             discardRetainedAudio()
             discardCarryOver()
         }
-        // A rewording server that has to be woken (#189) gets the length of this dictation to do it in.
+        // A server that has to be woken (#189) gets the length of this dictation to do it in: the
+        // transcription server whenever its own switch is on, the rewording server when a rewording
+        // will follow.
+        warmUp(transcriptionAccount())
         if (rewordingWillFollow()) warmUpRewordingServer()
         startJob = scope.launch {
             try {
@@ -2213,18 +2239,28 @@ object DictateController {
         }
         // Deterministic find-and-replace dictionary (issue #129), applied right before insert.
         val outputText = prefs.dictate.customMappings.get().apply(paragraphed)
+        // The space in front of it, if the field needs one (#443). Kept out of [outputText] on purpose:
+        // the history, the re-insert cache and the clipboard copies hold the dictation, not the seam.
+        val lead: String
         if (finalizeViaComposing) {
             // Realtime (#128): replace the live-streamed preview with the finished (reworded) result via the
             // minimal diff, then honor auto-enter — instead of committing on top of the preview.
             val outSink = sink(appContext)
+            // A preview already on screen carries the separator decided at its first word; asking the field
+            // now would find our own preview in front of the cursor.
+            lead = when {
+                outputText.isEmpty() -> ""
+                realtimeShown.isNotEmpty() -> dictationLead
+                else -> leadFor(appContext, outputText)
+            }
             // Off the main thread for the overlay, like every other accessibility write: this one ends
             // in the same resolve-focus-write-verify round trip (see [writeToSink]).
             val landed = if (outputTarget == OutputTarget.OVERLAY) {
                 withContext(Dispatchers.IO) {
-                    outSink.commitDictationFinal(outputText, realtimeShown.toString())
+                    outSink.commitDictationFinal(lead + outputText, realtimeShown.toString())
                 }
             } else {
-                outSink.commitDictationFinal(outputText, realtimeShown.toString())
+                outSink.commitDictationFinal(lead + outputText, realtimeShown.toString())
             }
             realtimeShown.setLength(0)
             realtimeTranscript.setLength(0)
@@ -2248,7 +2284,8 @@ object DictateController {
             ) {
                 copyToSystemClipboard(appContext, outputText)
             }
-            val committed = commitOutput(appContext, outputText)
+            lead = leadFor(appContext, outputText)
+            val committed = commitOutput(appContext, lead + outputText)
             if (committed) latencyTrace?.let { logLatency(it, "outputCommitted") }
             // Floating button (#156): the accessibility insert can be silently swallowed by some app fields
             // (Gemini's Compose box, WebViews). Don't flash a false green check — surface an error, and
@@ -2272,6 +2309,7 @@ object DictateController {
         }
         // Re-insert safety net (issue #111) + lifetime stats (issue #142) + history log (issue #140).
         rememberLastDictation(outputText)
+        lastDictationLead = lead
         if (capture?.isReplay != true) {
             DictateStats.recordDictation(prefs, outputText, recordedSeconds)
             if (recordedSeconds > 0L) creditAudioSeconds(recordedSeconds)
@@ -2427,8 +2465,8 @@ object DictateController {
         // unless the preview is held back (#345), in which case the words are only remembered and the field
         // sees nothing until stop. The stream itself runs identically either way; this is purely what the
         // user is shown, so hiding it costs no speed and removes the word-by-word churn.
-        fun showLive(full: String) {
-            if (realtimeCancelled) return   // a late callback must not re-add text after a cancel
+        suspend fun showLive(full: String) {
+            if (realtimeCancelled) return   // a late callback must not re-add text after a cancel or a finalize
             _interimText.value = full
             realtimeTranscript.setLength(0)
             realtimeTranscript.append(full)
@@ -2466,9 +2504,13 @@ object DictateController {
                 }
             }
             if (realtimeHidden) return
-            runCatching { sink(appContext).setDictationPreview(full, realtimeShown.toString()) }
+            // The separator is settled before the first word goes in (#443) and then travels with the
+            // preview, so the finalize replaces like with like.
+            if (realtimeShown.isEmpty()) dictationLead = leadFor(appContext, full)
+            val shown = if (full.isEmpty()) "" else dictationLead + full
+            runCatching { sink(appContext).setDictationPreview(shown, realtimeShown.toString()) }
             realtimeShown.setLength(0)
-            realtimeShown.append(full)
+            realtimeShown.append(shown)
         }
         // Read once for the whole session rather than per piece, so a subtype switch mid-dictation cannot
         // leave one transcript joined by two different conventions.
@@ -2604,6 +2646,16 @@ object DictateController {
                 // the clock is restarted by every piece of text and only silence ends it early.
                 val tailComplete = awaitRealtimeTail(closed)
                 runCatching { session?.cancel() }
+                // From here the transcript is read, and nothing that arrives later may touch the field.
+                // `close(1000)` keeps frames coming until the server's own close, and a final that lands
+                // after the commit used to go through showLive with an empty realtimeShown, typing the
+                // whole dictation in a second time: on a slow connection the provider's ordinary last
+                // message is enough, once it misses the silence window (#172). The yield first lets
+                // whatever is already queued on the main thread land: a session that closed before the
+                // wait began left `closed.await()` with nothing to suspend for, and its last segment can
+                // still be waiting behind this coroutine.
+                yield()
+                realtimeCancelled = true
                 // The transcript is everything the stream produced (finals + last partial), which with a
                 // hidden preview (#345) is the only place it exists; fall back to the finalized-segments
                 // buffer only if the stream produced nothing at all.
@@ -2697,6 +2749,7 @@ object DictateController {
     }
 
     private fun resetSegmentedState() {
+        segmentGeneration++
         segmentedActive = false
         segmentNextIndex = 0
         segmentCommitIndex = 0
@@ -2722,6 +2775,7 @@ object DictateController {
     private fun flushSegment(context: Context, splitterAlreadyReset: Boolean) {
         if (!segmentedActive || _state.value !is UiState.Recording) return
         val appContext = context.applicationContext
+        val generation = segmentGeneration
         // Manual cuts reset the analyzer at call time so audio queued after this point belongs to the next
         // turn. Automatic cuts already reset atomically inside LiveSpeechSplitter before invoking us.
         if (!splitterAlreadyReset) segmentVad?.notifyCut()
@@ -2738,11 +2792,11 @@ object DictateController {
             } ?: return@launch
             val (idx, wav) = assigned
             if (wav != null && wav.exists() && wav.length() > 0L) {
-                launchSegmentTranscription(appContext, idx, wav)
+                launchSegmentTranscription(appContext, idx, wav, generation)
             } else {
                 // Nothing captured since the last cut (e.g. a double tap): keep the index sequence
                 // contiguous so the ordered drain never stalls.
-                onSegmentResult(appContext, idx, "")
+                onSegmentResult(appContext, idx, "", generation)
             }
         }
     }
@@ -2778,6 +2832,7 @@ object DictateController {
         segmentRecordedSeconds = recordedSecondsOf(_state.value)
         _segmentedRecording.value = false
         setTranscribing()
+        val generation = segmentGeneration
         scope.launch {
             val assigned = segmentMutex.withLock {
                 val i = segmentNextIndex++
@@ -2798,14 +2853,42 @@ object DictateController {
             }
             val (idx, wav) = assigned
             if (!discardFinal && wav != null && wav.exists() && wav.length() > 0L) {
-                launchSegmentTranscription(appContext, idx, wav)
+                launchSegmentTranscription(appContext, idx, wav, generation)
             } else {
-                onSegmentResult(appContext, idx, "")
+                onSegmentResult(appContext, idx, "", generation)
             }
         }
     }
 
-    private fun launchSegmentTranscription(appContext: Context, idx: Int, wav: File) {
+    /**
+     * The stop button while a stopped long-form dictation still waits for its last segments (#172). It used
+     * to cancel nothing: the state went to Idle, the segment jobs ran on and committed their text anyway,
+     * and one still running when the next recording started wrote into that one.
+     *
+     * Now it keeps what has already landed in the field, gives up on everything still pending, and finishes
+     * with that through the normal end (formatting, prompts, history) — the promise the trash button makes
+     * during the recording (#183). A segment that finished out of order is dropped with the rest: it sits
+     * behind a gap that is never going to close.
+     */
+    private fun abandonPendingSegments(appContext: Context) {
+        scope.launch {
+            segmentMutex.withLock {
+                segmentGeneration++ // whatever is still in flight now belongs to no dictation
+                segmentJobs.forEach { it.cancel() }
+                segmentJobs.clear()
+                segmentResults.clear()
+                segmentAudioFiles.keys.filter { it >= segmentCommitIndex }.forEach { idx ->
+                    segmentAudioFiles.remove(idx)?.let { runCatching { it.delete() } }
+                }
+                segmentInFlightCount = 0
+                _segmentsInFlight.value = 0
+                segmentStopped = true
+            }
+            finalizeSegmentedEnd(appContext)
+        }
+    }
+
+    private fun launchSegmentTranscription(appContext: Context, idx: Int, wav: File, generation: Int) {
         val job = scope.launch {
             // Best-effort cross-segment continuity: bias the recognizer with what's committed so far.
             val continuity = realtimeShown.toString()
@@ -2815,7 +2898,7 @@ object DictateController {
                 ?: transcribeSegmentRaw(appContext, wav, continuity)
             // Keep the WAV when it will be merged into the history audio; otherwise drop it now.
             if (!segmentKeepAudio) withContext(Dispatchers.IO) { runCatching { wav.delete() } }
-            onSegmentResult(appContext, idx, text ?: "")
+            onSegmentResult(appContext, idx, text ?: "", generation)
         }
         segmentJobs.add(job)
         job.invokeOnCompletion { segmentJobs.remove(job) }
@@ -2825,16 +2908,23 @@ object DictateController {
      * Buffers a finished segment's raw text and drains the ordered commit queue: appends every now-in-order
      * segment to the field's live preview. When the last segment lands after a stop, runs the end finalize.
      */
-    private suspend fun onSegmentResult(appContext: Context, idx: Int, text: String) {
+    private suspend fun onSegmentResult(appContext: Context, idx: Int, text: String, generation: Int) {
         val tightening = appContext.transcriptTighteningSymbols()
         val shouldFinish = segmentMutex.withLock {
+            if (generation != segmentGeneration) return@withLock false
             segmentResults[idx] = text
             while (segmentResults.containsKey(segmentCommitIndex)) {
                 val raw = segmentResults.remove(segmentCommitIndex)!!.trim()
                 segmentCommitIndex++
                 if (raw.isNotEmpty()) {
                     val prev = realtimeShown.toString()
-                    val full = TranscriptJoin.join(prev, raw, tightening)
+                    // The first segment is the one that meets the field's own text (#443).
+                    val full = if (prev.isEmpty()) {
+                        dictationLead = leadFor(appContext, raw)
+                        dictationLead + raw
+                    } else {
+                        TranscriptJoin.join(prev, raw, tightening)
+                    }
                     runCatching { sink(appContext).setDictationPreview(full, prev) }
                     realtimeShown.setLength(0)
                     realtimeShown.append(full)
@@ -3033,6 +3123,27 @@ object DictateController {
             sink.performEnter()
         }
         return committed
+    }
+
+    /**
+     * The separator a dictation of [text] needs against what already sits in front of the cursor: a space,
+     * or nothing (issue #443). Two dictations in a row used to be glued — `1, 2, 3.Testing` — on the
+     * keyboard as much as over the floating button, because the keyboard only ever spaced a seam it made
+     * itself, after a picked suggestion. The rule is [TranscriptJoin.separatorBefore]; this only asks the
+     * field, off the main thread for the overlay like every other accessibility call.
+     *
+     * Nothing for the system voice input: the calling app joins our result into its own field.
+     */
+    private suspend fun leadFor(appContext: Context, text: String): String {
+        if (text.isEmpty() || outputTarget == OutputTarget.RECOGNITION_SERVICE) return ""
+        val sink = sink(appContext)
+        // One character is all the rule looks at.
+        val before = if (outputTarget == OutputTarget.OVERLAY) {
+            withContext(Dispatchers.IO) { sink.textBeforeCursor(1) }
+        } else {
+            sink.textBeforeCursor(1)
+        }
+        return appContext.transcriptSeparatorBefore(before, text)
     }
 
     /**
@@ -3485,7 +3596,12 @@ object DictateController {
         val text = prefs.dictate.lastDictation.get()
         if (text.isEmpty()) return false
         outputTarget = OutputTarget.OVERLAY
-        if (!sink(context).deleteLastText(text)) return false
+        // The space put in front of it (#443) goes with it; the bare text is the fallback for a field the
+        // user has edited in between, and for a dictation from before the process last restarted.
+        val sink = sink(context)
+        val lead = lastDictationLead
+        if (!(lead.isNotEmpty() && sink.deleteLastText(lead + text)) && !sink.deleteLastText(text)) return false
+        lastDictationLead = ""
         scope.launch { prefs.dictate.lastDictation.set("") }
         clearError()
         return true
@@ -4112,31 +4228,36 @@ object DictateController {
      * the trimmed model output.
      */
     /**
-     * Wake-on-demand for a self-hosted rewording backend (issue #189).
+     * Wake-on-demand for a self-hosted backend (issue #189).
      *
      * The self-hosting shape this exists for: a small always-on box in front of a GPU machine that sleeps
      * between jobs and is woken by the first packet that reaches it. Waking takes tens of seconds, and
      * since the app only ever spoke to the server when it had something to send, that wait landed on the
      * request the user was already waiting for — or timed out.
      *
-     * So the moment a rewording is *known to be coming*, an empty `/models` goes out: free, side-effect
+     * So the moment a server is *known to be needed*, an empty `/models` goes out: free, side-effect
      * free, and every OpenAI-compatible server answers it. From there the machine has the whole dictation
      * to boot in. It is fire-and-forget by design — a failure is exactly the case this is for, and nothing
      * about it may reach the user or hold up a recording.
      *
-     * Deliberately not fired for transcriptions: the reporter runs a cloud STT in front of a local GPU,
-     * and waking that GPU for every dictation would defeat the point of letting it sleep.
+     * The switch belongs to each account, and each account is only woken for its own job: the rewording
+     * server when a rewording is certain, the transcription server when a recording starts. That keeps
+     * the reporter's shape intact — a cloud STT in front of a local GPU leaves the GPU asleep through
+     * dictations that end without a rewording, since the cloud account has no switch to turn on — while
+     * a self-hosted transcription server that sleeps between jobs (or unloads its model when idle) gets
+     * the same head start. One account doing both jobs is woken once.
      */
-    private fun warmUpRewordingServer() {
-        val account = rewordingAccount()
+    private fun warmUpRewordingServer() = warmUp(rewordingAccount(), apiKey = rewordingApiKey())
+
+    private fun warmUp(account: ProviderAccount, apiKey: String = account.apiKey) {
         if (!account.customWarmUp) return
+        val preset = presetFor(account)
+        val baseUrl = baseUrlOverrideFor(account)
+        val key = baseUrl ?: account.providerId
         val now = SystemClock.elapsedRealtime()
         // Once a minute is plenty: the machine is either coming up already or it is up.
-        if (now - lastWarmUpAtMs in 0 until WARM_UP_THROTTLE_MS) return
-        lastWarmUpAtMs = now
-        val preset = presetFor(account)
-        val apiKey = account.apiKey.ifBlank { transcriptionAccount().apiKey }
-        val baseUrl = baseUrlOverrideFor(account)
+        if (now - (lastWarmUpAtMs[key] ?: 0L) in 0 until WARM_UP_THROTTLE_MS) return
+        lastWarmUpAtMs[key] = now
         scope.launch(Dispatchers.IO) {
             runCatching {
                 // Deliberately not on the user's request timeout (#337): this request exists to make

@@ -1481,7 +1481,7 @@
     <string name="dictate__providers_field_realtime_model">Gerçek zamanlı model</string>
     <string name="dictate__providers_custom_realtime">Gerçek zamanlı akış</string>
     <string name="dictate__providers_custom_realtime_summary">Bu sunucu /v1/realtime adresinde OpenAI realtime protokolünü kullanır</string>
-    <string name="dictate__providers_custom_warm_up">Yeniden yazmadan önce uyandır</string>
+    <string name="dictate__providers_custom_warm_up">Önceden uyandır</string>
     <string name="dictate__providers_custom_warm_up_summary">Sunucuya erkenden dokunur, böylece uyuyan makine açılmaya vakit bulur</string>
     <string name="dictate__providers_realtime_model_default">Varsayılan</string>
     <string name="dictate__instant_recording_title">Anında kayıt</string>
@@ -1759,6 +1759,8 @@
     <string name="dictate__mappings_wholeword_summary">Yalnızca tek başına duran kelimeleri değiştir, daha uzun kelimelerin içindeki eşleşmeleri değil.</string>
     <string name="dictate__mappings_wholeword_title">Yalnızca tam kelime</string>
     <string name="dictate__wear_standalone_summary">API anahtarını saate gönder; telefon yokken de dikte edebilsin.</string>
+    <string name="dictate__wear_tether_notif_channel_name">Saatten dikte</string>
+    <string name="dictate__wear_tether_notif_title">Saatin için yazıya dökülüyor…</string>
     <string name="dictate__wear_standalone_title">Anahtarı saatle senkronize et</string>
     <string name="emoji__search__hint">Emoji ara</string>
     <string name="emoji__row__open_panel">Tüm emojileri aç</string>
