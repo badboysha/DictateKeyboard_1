@@ -1883,7 +1883,9 @@ object DictateController {
         val apiKey = account.apiKey
         val preset = presetFor(account)
         val appContext = context.applicationContext
-        val model = transcriptionModelFor(appContext, account, preset, "gpt-4o-mini-transcribe")
+        val model = transcriptionModelFor(
+            appContext, account, preset, ProviderRegistry.OPENAI.defaultTranscriptionModel.orEmpty(),
+        )
         // History metadata (issue #140), resolved once so the success (capture) and EVERY failure path —
         // including the early returns below (no key / model not downloaded) — log the same info.
         val historyProviderName = account.displayName.ifBlank { preset.displayName }
@@ -3202,7 +3204,9 @@ object DictateController {
         val account = transcriptionAccount()
         val apiKey = account.apiKey
         val preset = presetFor(account)
-        val model = transcriptionModelFor(appContext, account, preset, "gpt-4o-mini-transcribe")
+        val model = transcriptionModelFor(
+            appContext, account, preset, ProviderRegistry.OPENAI.defaultTranscriptionModel.orEmpty(),
+        )
         val language = prefs.dictate.activeInputLanguage.get().takeIf { it != DictateLanguages.DETECT }
         val style = transcriptionStylePrompt()
         val prompt = continuity.takeLast(200).trim().let { if (it.isEmpty()) style else "$it $style".trim() }
@@ -4612,18 +4616,21 @@ object DictateController {
             timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
         )
         // Reasoning effort for reasoning models (issue #141); a per-prompt override wins over the global
-        // setting (#155). OFF → null → field omitted. CUSTOM (#186) uses a user-entered wire value —
-        // the per-prompt one when the override itself is CUSTOM, else the global custom value.
+        // setting (#155). OFF → field omitted, unless the model is the preset's own default and the preset
+        // knows what it should run at (gpt-6-luna). CUSTOM (#186) uses a user-entered wire value — the
+        // per-prompt one when the override itself is CUSTOM, else the global custom value.
         val effort = reasoning ?: prefs.dictate.rewordingReasoningEffort.get()
-        val reasoningWire = if (effort == DictateReasoningEffort.CUSTOM) {
-            val custom = if (reasoning == DictateReasoningEffort.CUSTOM) {
-                reasoningCustom
-            } else {
-                prefs.dictate.rewordingReasoningEffortCustom.get()
+        val reasoningWire = when (effort) {
+            DictateReasoningEffort.CUSTOM -> {
+                val custom = if (reasoning == DictateReasoningEffort.CUSTOM) {
+                    reasoningCustom
+                } else {
+                    prefs.dictate.rewordingReasoningEffortCustom.get()
+                }
+                custom?.trim()?.ifBlank { null }
             }
-            custom?.trim()?.ifBlank { null }
-        } else {
-            effort.wire
+            DictateReasoningEffort.OFF -> preset.reasoningEffortWhenOff(model)
+            else -> effort.wire
         }
         val result = client.complete(
             ChatRequest.ofUser(model, userContent, reasoningEffort = reasoningWire),
