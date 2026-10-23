@@ -74,9 +74,11 @@ import dev.patrickgold.florisboard.dictate.provider.RealtimeClient
 import dev.patrickgold.florisboard.dictate.provider.RealtimeSession
 import dev.patrickgold.florisboard.dictate.provider.AudioContainer
 import dev.patrickgold.florisboard.dictate.provider.ProviderAccount
+import dev.patrickgold.florisboard.dictate.provider.ProviderListing
 import dev.patrickgold.florisboard.dictate.provider.ProviderPreset
 import dev.patrickgold.florisboard.dictate.provider.ProviderRegistry
 import dev.patrickgold.florisboard.dictate.provider.TranscriptionApi
+import dev.patrickgold.florisboard.dictate.provider.TranscriptionFallback
 import dev.patrickgold.florisboard.dictate.provider.TranscriptionRequest
 import dev.patrickgold.florisboard.dictate.overlay.AccessibilitySink
 import dev.patrickgold.florisboard.dictate.overlay.DictateAccessibilityService
@@ -188,6 +190,11 @@ object DictateController {
             val attempt: Int = 1,
             val onDevice: Boolean = false,
             val startedAtMs: Long,
+            /**
+             * The fallback provider this dictation was handed to because the active one could not be
+             * reached (#455), by name; null while the active provider is the one transcribing.
+             */
+            val via: String? = null,
         ) : UiState
         /** A rewording/GPT request is in flight (manual prompt, auto-apply, auto-format or live). */
         data class Rewording(val label: String) : UiState
@@ -315,13 +322,15 @@ object DictateController {
     /**
      * Live transcript while a real-time recording runs: finalized segments plus the current partial. The
      * Smartbar shows this as a live caption; the field only receives the finished (reworded) text on stop.
-     * Empty outside a realtime recording.
+     * A long-form dictation from the floating button fills it too, with the segments transcribed so far
+     * (#460). Empty outside those two.
      */
     val interimText: StateFlow<String> = _interimText.asStateFlow()
 
     /**
-     * Whether the floating button may caption the running stream next to itself (discussion #453): only a
-     * dictation the button started, never a live prompt — its words are an instruction, the same reason
+     * Whether the floating button may caption the running stream next to itself (discussion #453), or the
+     * long-form segments transcribed so far (#460): only a dictation the button started, never a live
+     * prompt — its words are an instruction, the same reason
      * they stay out of the field — and not for someone who keeps the stream out of sight until stop
      * (`prefs.dictate.realtimeHidePreview`, #345). The field never sees the words before stop, whatever this says.
      */
@@ -391,10 +400,10 @@ object DictateController {
     private var segmentVad: LiveSpeechSplitter? = null  // live VAD auto-split, when enabled (Phase 2)
     private val segmentAudioFiles = HashMap<Int, File>()  // kept segment WAVs (index -> file) for history merge
     private var segmentKeepAudio = false                  // whether to keep + merge segment audio (retention on)
-    // Which engines answered this dictation's segments, for the history to name (#457): the on-device
-    // model the offline fallback ran some of them on, and whether any came back from the configured one.
-    // A connection that drops halfway through a long dictation leaves both set.
-    private var segmentFallbackModel: String? = null
+    // Which engines answered this dictation's segments, for the history to name (#457): the fallback that
+    // took some of them — the on-device engine, or since #455 another provider — and whether any came back
+    // from the configured one. A connection that drops halfway through a long dictation leaves both set.
+    private var segmentFallbackEngine: HistoryEngine? = null
     private var segmentAnsweredAsConfigured = false
     private val _segmentFlushCount = MutableStateFlow(0)
     /** Monotonic count of segment cuts — the recording bar flashes the Next button on each change (#170). */
@@ -735,6 +744,8 @@ object DictateController {
         wavBytes > PACK_ABOVE_BYTES || (limitBytes > 0L && wavBytes > limitBytes / 4 * 3)
     /** Cache file for a recording taken back from a hanging cloud request to finish on-device (#270). */
     private const val RESCUED_AUDIO_NAME = "dictate_rescued.wav"
+    /** The recording handed to the fallback provider (#455), with the original's extension appended. */
+    private const val FALLBACK_AUDIO_BASENAME = "dictate_fallback"
     // Realtime (#128, #372): after finish(), how long to wait for the provider to flush the last words
     // before we commit the already-streamed text. Neither bound is normally reached — the session closes
     // itself as soon as its end-of-stream marker arrives, measured at 0.27–0.37 s after `audioStreamEnd`
@@ -1125,12 +1136,13 @@ object DictateController {
      * A retry and the handover to the on-device fallback both publish a fresh state object, but neither
      * is a fresh wait — the person watching has been waiting since the recording stopped, and that total
      * is the number worth showing. So the stamp is inherited whenever we are already transcribing, and
-     * only a transition from another state (Recording, Idle) starts a new one.
+     * only a transition from another state (Recording, Idle) starts a new one. A hand-over to a fallback
+     * provider (#455) is the same wait continued, and keeps the stamp the same way.
      */
-    private fun setTranscribing(attempt: Int = 1, onDevice: Boolean = false) {
+    private fun setTranscribing(attempt: Int = 1, onDevice: Boolean = false, via: String? = null) {
         val startedAtMs = (_state.value as? UiState.Transcribing)?.startedAtMs
             ?: SystemClock.elapsedRealtime()
-        _state.value = UiState.Transcribing(attempt, onDevice, startedAtMs)
+        _state.value = UiState.Transcribing(attempt, onDevice, startedAtMs, via)
     }
 
     /** Localized one-line headline for an API error [kind] (roadmap 1.12 specific error messages). */
@@ -1187,7 +1199,7 @@ object DictateController {
         val localAccount = prefs.dictate.providerAccounts.get().getOrEmpty(ProviderRegistry.LOCAL.id)
         val localModel = transcriptionModelFor(context, localAccount, ProviderRegistry.LOCAL)
         val ready = localModel.isNotBlank() && LocalModelManager.isInstalled(context, localModel)
-        return !(ready && prefs.dictate.localFallbackEnabled.get())
+        return !(ready && fallbackIdFor(context, transcriptionAccount()) == ProviderRegistry.LOCAL.id)
     }
 
     /**
@@ -1580,7 +1592,7 @@ object DictateController {
                 requestAudioFocusIfEnabled(appContext)
                 val audioSource = setupBluetoothIfEnabled(appContext)
                 // Long-form segmented dictation (#170): transcribe cut segments in the background while
-                // recording continues. Off for realtime / live-prompt / overlay / multimodal (see the gate).
+                // recording continues. Off for realtime / live-prompt / system voice input / multimodal (see the gate).
                 val segmented = isSegmentedMode(appContext)
                 // Auto-split: Silero VAD finds candidate pauses, then Smart Turn v3 decides whether the
                 // thought is complete; the configured pause remains the Pipecat-style safety fallback.
@@ -1892,9 +1904,13 @@ object DictateController {
         latencyTrace: BatchLatencyTrace = BatchLatencyTrace(),
         // A realtime dictation falling back to batch: what the user took over of its preview (#421).
         handedOver: String = "",
+        // The fallback provider this dictation was handed to because the active one could not be reached
+        // (#455). It runs exactly as if it were the active provider, with its own model, key and formats,
+        // and is never handed on again.
+        fallbackAccount: ProviderAccount? = null,
     ) {
         logLatency(latencyTrace, "transcribeEntered")
-        val account = if (forceLocal) localTranscriptionAccount() else transcriptionAccount()
+        val account = fallbackAccount ?: if (forceLocal) localTranscriptionAccount() else transcriptionAccount()
         val apiKey = account.apiKey
         val preset = presetFor(account)
         val appContext = context.applicationContext
@@ -1943,7 +1959,15 @@ object DictateController {
 
         ensureHapticObserver(appContext)
         val localEngine = preset.transcriptionApi == TranscriptionApi.LOCAL_ONDEVICE
-        setTranscribing(onDevice = localEngine)
+        // Who takes over if this provider cannot do it (#104, #455). Nobody for the on-device engine, for a
+        // dictation already handed over, or for one the user sent to the phone on purpose (#228/#270).
+        val fallbackId = if (localEngine || fallbackAccount != null) null else fallbackIdFor(appContext, account)
+        // Named on the bar while a fallback provider transcribes, so the hand-over is not invisible — by the
+        // name the Fallback drop-down showed for it, so the two read the same.
+        val via = fallbackAccount?.let {
+            ProviderListing.displayNameOf(it.providerId, prefs.dictate.providerAccounts.get())
+        }
+        setTranscribing(onDevice = localEngine, via = via)
         // What a held button can still rescue (#270): the recording this request is carrying, for as long
         // as it is in flight. Cleared in the finally below, so the offer disappears with the request.
         inFlightAudio = if (localEngine) null else audioFile
@@ -2169,9 +2193,10 @@ object DictateController {
                             useChatAudio = chatAudio,
                             trustUserCerts = account.trustUserCerts,
                             timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
+                            handOverUnreachable = fallbackId != null,
                         ).transcribe(
                             request,
-                            onRetry = { attempt -> setTranscribing(attempt) },
+                            onRetry = { attempt -> setTranscribing(attempt, via = via) },
                         )
                     } catch (e: DictateApiException) {
                         // A provider that will not take the m4a gets the WAV instead (#281). Three of the
@@ -2186,14 +2211,26 @@ object DictateController {
                                 useChatAudio = chatAudio,
                                 trustUserCerts = account.trustUserCerts,
                                 timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
+                                handOverUnreachable = fallbackId != null,
                             ).transcribe(
                                 request.copy(audioFile = packedFrom!!),
-                                onRetry = { attempt -> setTranscribing(attempt) },
+                                onRetry = { attempt -> setTranscribing(attempt, via = via) },
                             )
                         } else {
+                        // Another provider takes over a server that could not be reached at all (#455). It
+                        // gets the recording as it was, not this provider's packed or sped-up copy, and runs
+                        // through this same path from the top, so its own model, formats and limits apply.
+                        if (fallbackId != null && fallbackId != ProviderRegistry.LOCAL.id &&
+                            TranscriptionFallback.takesOver(fallbackId, e)
+                        ) {
+                            fallbackCopyOf(appContext, audioFile)?.let { copy ->
+                                throw FallbackHandOver(prefs.dictate.providerAccounts.get().getOrEmpty(fallbackId), copy, e)
+                            }
+                        }
                         // Offline fallback (#104): the cloud call failed because we're offline (after its
                         // retries) — transcribe on-device with the downloaded model instead of erroring.
-                        val fallback = localFallbackProvider(appContext, preset, e) ?: throw e
+                        val fallback = (if (fallbackId == ProviderRegistry.LOCAL.id) localFallbackProvider(appContext, e) else null)
+                            ?: throw e
                         LocalTranscriptionProvider.setIdleUnloadMillis(
                             prefs.dictate.localModelUnloadMinutes.get() * 60_000L,
                         )
@@ -2262,6 +2299,26 @@ object DictateController {
                 // cache file for its resend chip (#437), which is why the finally asks before deleting it.
                 outcome = "cancelled"
                 throw c
+            } catch (h: FallbackHandOver) {
+                // The active provider could not be reached and another one takes this dictation (#455). Not
+                // an error and not the end of the dictation: the same wait goes on (the bar keeps its clock),
+                // the history row this attempt opened is continued rather than left behind as a failure, and
+                // a live prompt still applies. The new attempt waits for this one to finish its cleanup,
+                // which deletes scratch files whose names the new one is about to use.
+                outcome = "fallback"
+                Log.i(
+                    LATENCY_LOG_TAG,
+                    "phase=fallback to=${presetFor(h.account).id} kind=${h.error.kind} " +
+                        "cause=${h.error.cause?.javaClass?.simpleName}",
+                )
+                livePromptArmed = live
+                unwindingTranscribeJob = coroutineContext[Job]
+                transcribe(
+                    appContext, h.audio, recordedSeconds, gate = false,
+                    isReplay = isReplay, source = source, replayHistoryId = replayHistoryId,
+                    adoptHistoryId = pendingHistoryId, latencyTrace = latencyTrace, handedOver = handedOver,
+                    fallbackAccount = h.account,
+                )
             } catch (e: DictateApiException) {
                 outcome = "apiError"
                 // Diagnostics (#447): which failure it was. Provider error text never carries the transcript.
@@ -2465,6 +2522,14 @@ object DictateController {
                 written.isEmpty() -> ""
                 realtimeShown.isNotEmpty() -> dictationLead
                 else -> leadFor(appContext, written)
+            }
+            // The always-copy safety net (#214) before the commit, for the reason the batch branch gives:
+            // realtime and long-form dictations from the floating button are inserted here, and this
+            // branch used to skip the setting that promises "every dictation".
+            if (outputTarget == OutputTarget.OVERLAY && outputText.isNotEmpty() &&
+                prefs.dictate.floatingButtonCopyToClipboard.get()
+            ) {
+                copyToSystemClipboard(appContext, outputText)
             }
             // Off the main thread for the overlay, like every other accessibility write: this one ends
             // in the same resolve-focus-write-verify round trip (see [writeToSink]).
@@ -2948,13 +3013,17 @@ object DictateController {
     // --- Long-form segmented dictation (issue #170) ---------------------------------------------
 
     /**
-     * Whether the next recording should run in segmented mode: the feature is on, output goes to the
-     * keyboard (not the accessibility overlay), it's not a live-prompt recording, realtime streaming is
-     * not active, and the provider isn't in single-call multimodal mode (which would format per segment).
+     * Whether the next recording should run in segmented mode: the feature is on, it's not a live-prompt
+     * recording, realtime streaming is not active, and the provider isn't in single-call multimodal mode
+     * (which would format per segment).
+     *
+     * The keyboard and the floating button both qualify (#460); system voice input does not, since it hands
+     * back one result and has no field to show progress in. Over the floating button the segments are held
+     * back until stop, see [segmentsHeldBack].
      */
     private fun isSegmentedMode(context: Context): Boolean =
         prefs.dictate.longformMode.get().isEnabled &&
-            outputTarget == OutputTarget.IME &&
+            outputTarget != OutputTarget.RECOGNITION_SERVICE &&
             !livePromptArmed &&
             !isRealtimeActive(context) &&
             !transcriptionAccount().transcriptionViaChat
@@ -2975,8 +3044,9 @@ object DictateController {
         realtimeShownTranscript = ""
         realtimeHandedOver = ""
         realtimeTranscript.setLength(0)
-        // Segmented dictation shows its assembled text as it goes; the hidden-preview mode belongs to
-        // realtime alone, and the two are mutually exclusive (see [isSegmentedMode]).
+        // Segmented dictation has its own rule for holding the text back ([segmentsHeldBack]); the
+        // hidden-preview mode belongs to realtime alone, and the two are mutually exclusive (see
+        // [isSegmentedMode]).
         realtimeHidden = false
         // Reuse the realtime shown-text context so the existing cancel/interrupt cleanup clears the preview.
         realtimeContext = appContext
@@ -2994,13 +3064,22 @@ object DictateController {
         segmentAudioFiles.clear() // files themselves are deleted by finalize/cancel, not here
         segmentInFlightCount = 0
         segmentStopped = false
-        segmentFallbackModel = null
+        segmentFallbackEngine = null
         segmentAnsweredAsConfigured = false
         segmentVad?.release()
         segmentVad = null
+        _interimText.value = "" // the floating button's caption of the held-back segments
         _segmentsInFlight.value = 0
         _segmentedRecording.value = false
     }
+
+    /**
+     * Whether a segmented dictation keeps its segments out of the field until stop: over the floating button
+     * (#460), for the reason realtime holds its words back there (#357) — a field written piece by piece
+     * through accessibility drifts out of step with what we believe is in it. The segments go to the
+     * button's live caption instead, and the field gets one verified insert at the end.
+     */
+    private fun segmentsHeldBack(): Boolean = outputTarget == OutputTarget.OVERLAY
 
     /**
      * Cuts the current segment and keeps recording (the "Next segment" button, issue #170). The cut audio
@@ -3044,8 +3123,8 @@ object DictateController {
      * Cancel-button behaviour: in long-form mode, tapping the trash button ends the recording but keeps
      * everything transcribed so far — the already-committed segments are finalized and saved to history as
      * usual; only the current, not-yet-cut chunk is thrown away instead of being transcribed (#183).
-     * Outside long-form it aborts the whole recording ([cancelRecording]). Used by both the Smartbar and
-     * the legacy layout so the trash button behaves consistently.
+     * Outside long-form it aborts the whole recording ([cancelRecording]). Used by the Smartbar, the legacy
+     * layout and the floating button's × (#460), so every cancel button behaves the same.
      */
     fun cancelOrDiscardSegment(context: Context) {
         if (segmentedActive && _state.value is UiState.Recording) {
@@ -3137,7 +3216,7 @@ object DictateController {
                 ?: transcribeSegmentRaw(appContext, wav, continuity)
             // Keep the WAV when it will be merged into the history audio; otherwise drop it now.
             if (!segmentKeepAudio) withContext(Dispatchers.IO) { runCatching { wav.delete() } }
-            onSegmentResult(appContext, idx, segment?.text ?: "", generation, segment?.fallbackModel)
+            onSegmentResult(appContext, idx, segment?.text ?: "", generation, segment?.fallbackEngine)
         }
         segmentJobs.add(job)
         job.invokeOnCompletion { segmentJobs.remove(job) }
@@ -3152,14 +3231,14 @@ object DictateController {
         idx: Int,
         text: String,
         generation: Int,
-        fallbackModel: String? = null,
+        fallbackEngine: HistoryEngine? = null,
     ) {
         val tightening = appContext.transcriptTighteningSymbols()
         val shouldFinish = segmentMutex.withLock {
             if (generation != segmentGeneration) return@withLock false
             segmentResults[idx] = text
             if (text.isNotBlank()) {
-                if (fallbackModel != null) segmentFallbackModel = fallbackModel else segmentAnsweredAsConfigured = true
+                if (fallbackEngine != null) segmentFallbackEngine = fallbackEngine else segmentAnsweredAsConfigured = true
             }
             while (segmentResults.containsKey(segmentCommitIndex)) {
                 val raw = segmentResults.remove(segmentCommitIndex)!!.trim()
@@ -3167,6 +3246,11 @@ object DictateController {
                 if (raw.isNotEmpty()) {
                     // The whole dictation, whatever happens to it in the field: the finalize records it.
                     TranscriptJoin.appendPiece(realtimeTranscript, raw, tightening)
+                    if (segmentsHeldBack()) {
+                        // Nothing reaches the field before stop; the caption by the button shows it instead.
+                        _interimText.value = realtimeTranscript.toString()
+                        continue
+                    }
                     val outSink = sink(appContext)
                     // Segments never revise each other, so edited ones simply stay the user's, and the
                     // preview starts afresh at the cursor with this one (#421).
@@ -3191,7 +3275,8 @@ object DictateController {
 
     /**
      * All segments are in and committed as a raw preview; run the whole dictation through the normal
-     * post-processing once and replace the preview with the finished (formatted/reworded) text.
+     * post-processing once and replace the preview with the finished (formatted/reworded) text. Over the
+     * floating button there is no preview ([segmentsHeldBack]), so the replace is the one insert.
      */
     private suspend fun finalizeSegmentedEnd(appContext: Context) {
         val account = transcriptionAccount()
@@ -3204,7 +3289,7 @@ object DictateController {
         // whole dictation has a single retained-audio file in the history (issue #170 / #140 reuse).
         val keepAudio = segmentKeepAudio
         val audioFiles = segmentAudioFiles.toSortedMap().values.filter { it.exists() && it.length() > 0L }
-        val fallbackModel = segmentFallbackModel
+        val fallbackEngine = segmentFallbackEngine
         val partlyAsConfigured = segmentAnsweredAsConfigured
         resetSegmentedState()
         val mergedWav = if (keepAudio && audioFiles.isNotEmpty()) {
@@ -3223,11 +3308,9 @@ object DictateController {
         val configured = HistoryEngine(account.providerId, account.displayName.ifBlank { preset.displayName }, model)
         val capture = HistoryCapture(
             audioFile = mergedWav, // the merged segment audio, or null when retention is off
-            engine = fallbackModel?.let {
-                configured.fellBackTo(onDeviceHistoryEngine(it), partly = partlyAsConfigured)
-            } ?: configured,
+            engine = fallbackEngine?.let { configured.fellBackTo(it, partly = partlyAsConfigured) } ?: configured,
             language = prefs.dictate.activeInputLanguage.get().takeIf { it != DictateLanguages.DETECT } ?: "",
-            source = DictateHistorySource.KEYBOARD,
+            source = if (outputTarget == OutputTarget.OVERLAY) DictateHistorySource.OVERLAY else DictateHistorySource.KEYBOARD,
         )
         finalizeAndCommit(
             appContext, assembled, recordedSeconds, live = false,
@@ -3236,25 +3319,38 @@ object DictateController {
         mergedWav?.delete() // history already copied it during finalize
     }
 
-    /** A segment's raw text, and the on-device model that ran it when the offline fallback did (#457). */
-    private class SegmentText(val text: String, val fallbackModel: String?)
+    /** A segment's raw text, and the fallback that transcribed it when one had to (#457, #455). */
+    private class SegmentText(val text: String, val fallbackEngine: HistoryEngine?)
 
     /**
      * Transcribes one cut segment to RAW text (no formatting/rewording — that runs once at the end). Uses
      * the dedicated STT endpoint (never the multimodal chat path, which would format), with the offline
      * on-device fallback. Returns null on failure (the segment is dropped, keeping the sequence contiguous).
+     *
+     * [fallbackAccount] is the provider a segment goes to when the active one could not be reached (#455):
+     * each segment asks the active provider first, so a server that comes back mid-dictation is used again.
      */
-    private suspend fun transcribeSegmentRaw(appContext: Context, wav: File, continuity: String): SegmentText? {
+    private suspend fun transcribeSegmentRaw(
+        appContext: Context,
+        wav: File,
+        continuity: String,
+        fallbackAccount: ProviderAccount? = null,
+    ): SegmentText? {
         // Silence gate (issue #93): skip a segment that is just silence — e.g. the trailing pause before a
         // cut/stop — so the model can't hallucinate ghost text ("Vielen Dank" / "Thanks for watching")
         // from it. Fails open (transcribes) if the check can't run, so real speech is never dropped.
         if (prefs.dictate.skipSilentRecordings.get() && !SpeechGate.hasSpeech(appContext, wav)) return null
-        val account = transcriptionAccount()
+        val account = fallbackAccount ?: transcriptionAccount()
         val apiKey = account.apiKey
         val preset = presetFor(account)
         val model = transcriptionModelFor(
             appContext, account, preset, ProviderRegistry.OPENAI.defaultTranscriptionModel.orEmpty(),
         )
+        val fallbackId = if (fallbackAccount != null || preset.transcriptionApi == TranscriptionApi.LOCAL_ONDEVICE) {
+            null
+        } else {
+            fallbackIdFor(appContext, account)
+        }
         val language = prefs.dictate.activeInputLanguage.get().takeIf { it != DictateLanguages.DETECT }
         val style = transcriptionStylePrompt()
         val prompt = continuity.takeLast(200).trim().let { if (it.isEmpty()) style else "$it $style".trim() }
@@ -3284,7 +3380,7 @@ object DictateController {
             audioFile = packed ?: toUpload, model = model, language = language, prompt = prompt,
             expectedLanguages = expectedLanguages(),
         )
-        var fallbackModel: String? = null
+        var fallbackEngine: HistoryEngine? = null
         return try {
             val result = if (preset.transcriptionApi == TranscriptionApi.LOCAL_ONDEVICE) {
                 if (!LocalModelManager.isInstalled(appContext, model)) return null
@@ -3305,10 +3401,11 @@ object DictateController {
                         useChatAudio = false,
                         trustUserCerts = account.trustUserCerts,
                         timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
+                        handOverUnreachable = fallbackId != null,
                     ).transcribe(request)
                 } catch (e: DictateApiException) {
                     // A provider that will not take the m4a gets the WAV instead (#281); everything else
-                    // falls through to the on-device engine as before.
+                    // falls through to the fallback as before.
                     if (packed != null && e.kind == DictateApiException.Kind.FORMAT_NOT_SUPPORTED) {
                         OpenAiCompatibleClient.from(
                             preset, apiKey,
@@ -3317,16 +3414,28 @@ object DictateController {
                             useChatAudio = false,
                             trustUserCerts = account.trustUserCerts,
                             timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
+                            handOverUnreachable = fallbackId != null,
                         ).transcribe(request.copy(audioFile = toUpload))
                     } else {
-                        val fallback = localFallbackProvider(appContext, preset, e) ?: throw e
-                        fallbackModel = fallback.model
+                        // Another provider takes a segment the active one could not even be reached for (#455),
+                        // from the segment as recorded, with its own model and formats.
+                        if (fallbackId != null && fallbackId != ProviderRegistry.LOCAL.id &&
+                            TranscriptionFallback.takesOver(fallbackId, e)
+                        ) {
+                            val other = prefs.dictate.providerAccounts.get().getOrEmpty(fallbackId)
+                            Log.i(LATENCY_LOG_TAG, "phase=fallback segment to=${presetFor(other).id} kind=${e.kind}")
+                            return transcribeSegmentRaw(appContext, wav, continuity, fallbackAccount = other)
+                                ?.let { SegmentText(it.text, historyEngineOf(appContext, other)) }
+                        }
+                        val fallback = (if (fallbackId == ProviderRegistry.LOCAL.id) localFallbackProvider(appContext, e) else null)
+                            ?: throw e
+                        fallbackEngine = onDeviceHistoryEngine(fallback.model)
                         // On-device gets the segment as recorded, never the sped-up copy (#272).
                         fallback.provider.transcribe(if (spedUp != null) request.copy(audioFile = wav) else request)
                     }
                 }
             }
-            SegmentText(result.text, fallbackModel)
+            SegmentText(result.text, fallbackEngine)
         } catch (c: CancellationException) {
             throw c
         } catch (t: Throwable) {
@@ -3716,6 +3825,13 @@ object DictateController {
      * [interruptedAudioFile], with its metadata mirrored to prefs. The next keyboard open then offers to
      * send it (see [maybeOfferInterruptedRecording]). Outside the recording state this falls back to the
      * normal teardown ([cancelRecording]).
+     *
+     * A long-form dictation is finished instead, as if stop had been tapped. Its earlier segments are no
+     * longer in the recording — each cut handed them on — so stashing kept only the part since the last cut,
+     * while the segments still transcribing ran on into a dictation that was over and never finished it
+     * (#460: the floating button's screen-off made this reachable). Finishing keeps all of it: text that can
+     * no longer be inserted is kept for re-insert and in the history like any other dictation's, and over
+     * the floating button a refused insert puts it on the clipboard.
      */
     private fun stashRecording(context: Context) {
         val current = _state.value
@@ -3723,6 +3839,10 @@ object DictateController {
         if (current !is UiState.Recording || activeRecorder == null) {
             // Not actively recording (e.g. a start that never got going): use the normal teardown.
             cancelRecording()
+            return
+        }
+        if (segmentedActive) {
+            stopSegmentedAndFinalize(context)
             return
         }
         recorder = null
@@ -5096,20 +5216,49 @@ object DictateController {
     private fun requiresKey(account: ProviderAccount): Boolean = account.requiresCredential
 
     /**
+     * The transcription fallback that applies while [account] transcribes (#104, #455): a provider account
+     * id, [ProviderRegistry.LOCAL]'s for the on-device engine, or null for none. See
+     * [TranscriptionFallback.effectiveId] for when a stored choice stands down.
+     */
+    private fun fallbackIdFor(context: Context, account: ProviderAccount): String? {
+        val accounts = prefs.dictate.providerAccounts.get()
+        val setUp = ProviderListing.transcriptionChoices(accounts, selectedId = "") {
+            LocalModelManager.isInstalled(context, it)
+        }.map { it.first }
+        return TranscriptionFallback.effectiveId(prefs.dictate.transcriptionFallbackId.get(), account.providerId, setUp)
+    }
+
+    /**
+     * A dictation on its way to the fallback provider (#455): thrown out of the provider call once the active
+     * provider proved unreachable, so the request's own `finally` still cleans up, and caught where the
+     * request ends to hand [audio] — a copy, since that cleanup deletes the recording — to [account].
+     */
+    private class FallbackHandOver(
+        val account: ProviderAccount,
+        val audio: File,
+        val error: DictateApiException,
+    ) : Exception(error.message, error)
+
+    /**
+     * A copy of [audioFile] for the fallback provider to send, keeping its extension (#322: an imported voice
+     * note is Ogg, not WAV), or null if it could not be made — then the original error stands.
+     */
+    private fun fallbackCopyOf(context: Context, audioFile: File): File? {
+        val copy = File(context.cacheDir, "$FALLBACK_AUDIO_BASENAME.${audioFile.extension.ifEmpty { "wav" }}")
+        if (copy == audioFile) return null
+        return runCatching { audioFile.copyTo(copy, overwrite = true) }.getOrNull()
+    }
+
+    /**
      * The on-device provider to retry [error] on as an offline fallback (#104), or null when it doesn't
-     * apply: the fallback is disabled, the failure isn't a connectivity one, the active provider is
-     * already local, or no local model is downloaded.
+     * apply: the failure isn't a connectivity one, or no local model is downloaded. Whether the on-device
+     * engine is the fallback at all is the caller's to know ([fallbackIdFor]).
      */
     private fun localFallbackProvider(
         context: Context,
-        activePreset: ProviderPreset,
         error: DictateApiException,
     ): LocalFallback? {
-        if (!prefs.dictate.localFallbackEnabled.get()) return null
-        if (activePreset.transcriptionApi == TranscriptionApi.LOCAL_ONDEVICE) return null
-        if (error.kind != DictateApiException.Kind.NETWORK &&
-            error.kind != DictateApiException.Kind.TIMEOUT
-        ) return null
+        if (!TranscriptionFallback.takesOver(ProviderRegistry.LOCAL.id, error)) return null
         val localAccount = prefs.dictate.providerAccounts.get().getOrEmpty(ProviderRegistry.LOCAL.id)
         val localModel = transcriptionModelFor(context, localAccount, ProviderRegistry.LOCAL)
             .takeIf { it.isNotBlank() } ?: return null
@@ -5124,6 +5273,15 @@ object DictateController {
 
     /** The engine [localFallbackProvider] hands a failed request to, and the model it runs (#457). */
     private class LocalFallback(val provider: LocalTranscriptionProvider, val model: String)
+
+    /** [account] as a history entry names it, with the model it transcribes with (#455). */
+    private fun historyEngineOf(context: Context, account: ProviderAccount): HistoryEngine {
+        val preset = presetFor(account)
+        val model = transcriptionModelFor(
+            context, account, preset, ProviderRegistry.OPENAI.defaultTranscriptionModel.orEmpty(),
+        )
+        return HistoryEngine(account.providerId, account.displayName.ifBlank { preset.displayName }, model)
+    }
 
     /** The phone's own [model] as a history entry names it (#457), for text the offline fallback wrote. */
     private fun onDeviceHistoryEngine(model: String): HistoryEngine {
