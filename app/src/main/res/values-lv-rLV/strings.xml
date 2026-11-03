@@ -139,6 +139,7 @@
     <string name="settings__search__keywords__selection_metrics" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which shows how many words and characters are selected. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">vārdu skaits rakstzīmju skaits garums statistika</string>
     <string name="settings__search__keywords__trim_on_copy" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which removes spaces and line breaks at the ends of copied text. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">apgriezt atstarpes noņemt tīrīt kopēt izgriezt</string>
     <string name="settings__search__keywords__clear_cache">kešatmiņa krātuve vieta pagaidu faili atbrīvot dzēst tīrīt</string>
+    <string name="settings__search__keywords__keyboard_size">augstums augsts zems lielāks mazāks mainīt izmēru palielināt samazināt</string>
     <string name="settings__search__keywords__momentary_layer">turēt vilkt simbols slānis pieturzīmes pagaidu Īsā brīdī 123 iphone</string>
     <string name="settings__search__keywords__emoji_row">emocijzīmes rinda josla nesen izmantotās virs tastatūras ātri</string>
     <string name="settings__search__keywords__request_timeout">noildze taimauts lēns gaidīšana savienojums sekundes</string>
@@ -436,6 +437,7 @@
     <string name="pref__keyboard__font_size_multiplier__label" comment="Preference title">Fonta izmēra reizinātājs</string>
     <string name="pref__keyboard__group_layout__label" comment="Preference group title">Izkārtojums</string>
     <string name="pref__keyboard__landscape_input_ui_mode__label" comment="Preference value">Līmeniska pilnekrāna ievade</string>
+    <string name="pref__keyboard__keyboard_size__label">Tastatūras izmērs</string>
     <string name="pref__keyboard__key_spacing__label" comment="Preference title">Atstarpe starp taustiņiem</string>
     <string name="pref__keyboard__key_spacing__summary" comment="Preference summary">{v}% vertikāli, {h}% horizontāli — lielāka atstarpe padara mazākus taustiņus, nevis tastatūru.</string>
     <string name="pref__keyboard__group_keypress__label" comment="Preference group title">Taustiņa piespiešana</string>
@@ -568,6 +570,7 @@
     <string name="pref__gestures__delete_key_long_press__label" comment="Preference title">Dzēšanas taustiņa ilga piespiešana</string>
     <string name="pref__gestures__swipe_velocity_threshold__label" comment="Preference title">Pavilkšanas ātruma slieksnis</string>
     <string name="pref__gestures__swipe_distance_threshold__label" comment="Preference title">Pavilkšanas attāluma slieksnis</string>
+    <string name="settings__help__title">Palīdzība</string>
     <string name="settings__other__title" comment="Title of Other settings">Cits</string>
     <string name="pref__other__settings_theme__label" comment="Label of Settings theme preference in Other">Iestatījumu izskats</string>
     <string name="pref__other__settings_theme__auto_amoled" comment="Possible value of Settings theme preference in Other">Sistēmas noklusējums (AMOLED)</string>
@@ -618,11 +621,8 @@
     <string name="setup__select_ime__title">Atlasīt {app_name}</string>
     <string name="setup__select_ime__description">{app_name} tagad ir iespējots. Lai to izmantotu, jāpārslēdzas uz {app_name}, atlasot to ievades izvēles logā.</string>
     <string name="setup__select_ime__switch_keyboard_btn">Pārslēgt tastatūru</string>
-    <string name="setup__grant_notification_permission__title">Atļaut avārijas atskaišu paziņojumus</string>
-    <string name="setup__grant_notification_permission__description">Sākot ar Android 13, lietotnēm ir jāprasa atļauja, lai
-        nosūtītu paziņojumus. Dictate tā tiek izmantota tikai, lai atvērtu avārijas ziņojuma ekrānu avārijas gadījumā.
-        Šo atļauju sistēmas iestatījumos var mainīt jebkurā laikā.
-    </string>
+    <string name="setup__grant_notification_permission__title">Atļaut paziņojumus</string>
+    <string name="setup__grant_notification_permission__description">Sākot ar Android 13, lietotnēm ir jāprasa atļauja, pirms tās rāda paziņojumus. Dictate Keyboard rāda paziņojumu, kamēr peldošā poga ieraksta, kamēr tiek lejupielādēts runas modelis un kamēr jūsu pulkstenis diktē caur tālruni, un avārijas gadījumā atver avārijas ziņojumu. To var jebkurā laikā mainīt sistēmas iestatījumos.</string>
     <string name="setup__grant_notification_permission__btn">Piešķirt atļauju</string>
     <string name="setup__finish_up__title">Pabeigt</string>
     <string name="setup__finish_up__description_p1">{app_name} tagad ir iespējots un ir gatavs pielāgojumiem.</string>
@@ -868,7 +868,7 @@
     <string name="ext__addon_management_box__managing_placeholder">Pārvalda {extensions}</string>
     <string name="ext__addon_management_box__addon_manager_info">Visi uzdevumi, kas saistīti ar paplašinājumu ievietošanu, izgūšanu, izveidošanu, pielāgošanu un noņemšanu, ir paveicami centralizētajā papildinājumu pārvaldniekā.</string>
     <string name="ext__addon_management_box__go_to_page">Doties uz {ext_home_title}</string>
-    <string name="ext__home__info">Paplašinājumus var lejupielādēt un uzstādīt no Dictate papildinājumu glabātavas vai ievietot jebkuru paplašinājuma datni, kas ir lejupielādēta internetā.</string>
+    <string name="ext__home__info">Paplašinājumi pievieno izskatus, tastatūras izkārtojumus un valodu pakotnes. Importējiet paplašinājuma datni, lai to pievienotu; esošie ir uzskaitīti zemāk.</string>
     <string name="ext__home__visit_store">Apmeklēt papildinājumu glabātavu</string>
     <string name="ext__home__manage_extensions">Pārvaldīt uzstādītos paplašinājumus</string>
     <string name="ext__list__view_details">Skatīt izvērsumu</string>
@@ -1375,9 +1375,17 @@
     <string name="dictate__providers_test">Pārbaudīt savienojumu</string>
     <string name="dictate__providers_test_transcribe">Pārbaudīt transkribēšanu</string>
     <string name="dictate__providers_check_no_key">Vispirms ievadiet savu API atslēgu.</string>
-    <string name="dictate__providers_check_credentials_ok">Akreditācijas dati pārbaudīti · {count} modeļi</string>
+    <plurals name="dictate__providers_check_credentials_ok">
+        <item quantity="zero">Akreditācijas dati pārbaudīti · {count} modeļu</item>
+        <item quantity="one">Akreditācijas dati pārbaudīti · {count} modelis</item>
+        <item quantity="other">Akreditācijas dati pārbaudīti · {count} modeļi</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_ok_nocount">Akreditācijas dati pārbaudīti</string>
-    <string name="dictate__providers_check_endpoint_ok">Serveris sasniegts · {count} modeļi</string>
+    <plurals name="dictate__providers_check_endpoint_ok">
+        <item quantity="zero">Serveris sasniegts · {count} modeļu</item>
+        <item quantity="one">Serveris sasniegts · {count} modelis</item>
+        <item quantity="other">Serveris sasniegts · {count} modeļi</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_untested">Transkribēšana nav pārbaudīta.</string>
     <string name="dictate__providers_check_transcription_ok">Transkribēšana pārbaudīta</string>
     <string name="dictate__providers_check_transcription_text">Atgriezās kā: „{text}“</string>
@@ -1385,6 +1393,8 @@
     <string name="dictate__providers_check_failed_connection">Savienojuma pārbaude neizdevās</string>
     <string name="dictate__providers_check_failed_transcription">Transkribēšanas pārbaude neizdevās</string>
     <string name="dictate__providers_check_err_auth">Atslēga tika noraidīta. Pārbaudiet to un to, vai adrese pieder tam pašam kontam.</string>
+    <string name="dictate__providers_check_err_model">Atslēga darbojas, bet nedrīkst izmantot šo modeli. Izvēlieties citu modeli vai atļaujiet šo pakalpojuma sniedzēja projekta iestatījumos.</string>
+    <string name="dictate__error_model_unavailable">Modelis šai atslēgai nav pieejams</string>
     <string name="dictate__providers_check_err_quota">Atslēga darbojas, bet kontam vairs nav kvotas vai ir pārsniegts ierobežojums. Pārbaudiet savu plānu pie pakalpojuma sniedzēja.</string>
     <string name="dictate__providers_check_err_network">Serveri neizdevās sasniegt. Pārbaudiet adresi un interneta savienojumu.</string>
     <string name="dictate__providers_check_err_timeout">Nav atbildes noteiktajā laikā. Pakalpojuma sniedzējs var būt noslogots — mēģiniet vēlreiz.</string>
@@ -1415,7 +1425,11 @@
     <string name="dictate__model_picker_title">Izvēlieties modeli</string>
     <string name="dictate__model_picker_search">Meklējiet vai ievadiet modeļa ID</string>
     <string name="dictate__model_picker_loading">Ielādē modeļus…</string>
-    <string name="dictate__model_picker_count">{count} modeļi</string>
+    <plurals name="dictate__model_picker_count">
+        <item quantity="zero">{count} modeļu</item>
+        <item quantity="one">{count} modelis</item>
+        <item quantity="other">{count} modeļi</item>
+    </plurals>
     <string name="dictate__model_picker_refresh">Atsvaidzināt</string>
     <string name="dictate__model_picker_use_custom">Izmantot “{model}”</string>
     <string name="dictate__recording_group">Ierakstīšana</string>
@@ -2257,6 +2271,10 @@
     <string name="gif__error">Neizdevās ielādēt GIF. Pārbaudi savienojumu un API atslēgu.</string>
     <string name="gif__setup_needed">Iestatījumos pievieno bezmaksas KLIPY API atslēgu, lai meklētu GIF</string>
     <string name="gif__setup_needed_action">Iestatīt GIF meklēšanu</string>
+    <string name="gif__search_off">GIF meklēšana ir izslēgta</string>
+    <string name="quick_action__forward_delete__tooltip">Dzēst rakstzīmi aiz kursora</string>
+    <string name="dictate__error_no_rewording_model">Izvēlieties pārformulēšanas modeli pakalpojumam %1$s</string>
+    <string name="dictate__model_placeholder_required">obligāti: izvēlieties vai ierakstiet modeli</string>
     <string name="gif__copied_to_clipboard">GIF nokopēts starpliktuvē — turi nospiestu, lai ielīmētu</string>
     <string name="gif__insert_failed">Neizdevās ievietot GIF</string>
     <string name="quick_action__ime_ui_mode_gif">GIF</string>

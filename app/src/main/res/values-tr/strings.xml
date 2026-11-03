@@ -143,6 +143,7 @@
     <string name="settings__search__keywords__selection_metrics" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which shows how many words and characters are selected. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">kelime sayısı karakter sayısı uzunluk istatistik</string>
     <string name="settings__search__keywords__trim_on_copy" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which removes spaces and line breaks at the ends of copied text. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">kırpma boşluk silme temizleme kopyalama kesme</string>
     <string name="settings__search__keywords__clear_cache">önbellek depolama alan geçici dosyalar boşaltma silme temizleme</string>
+    <string name="settings__search__keywords__keyboard_size">yükseklik uzun kısa büyüt küçült yeniden boyutlandır boyut</string>
     <string name="settings__search__keywords__momentary_layer">basılı tut kaydır sembol katman noktalama geçici anlık 123 iphone</string>
     <string name="settings__search__keywords__emoji_row">emoji satır şerit son kullanılan klavye üstünde hızlı</string>
     <string name="settings__search__keywords__request_timeout">zaman aşımı yavaş bekleme bağlantı saniye</string>
@@ -475,6 +476,7 @@
     <string name="pref__keyboard__font_size_multiplier__label" comment="Preference title">Yazı tipi boyutu çarpanı</string>
     <string name="pref__keyboard__group_layout__label" comment="Preference group title">Düzen</string>
     <string name="pref__keyboard__landscape_input_ui_mode__label" comment="Preference value">Yatay tam ekran girişi</string>
+    <string name="pref__keyboard__keyboard_size__label">Klavye boyutu</string>
     <string name="pref__keyboard__key_spacing__label" comment="Preference title">Tuşlar arası boşluk</string>
     <string name="pref__keyboard__key_spacing__summary" comment="Preference summary">Dikey %{v}, yatay %{h} — daha geniş boşluk klavyeyi değil, tuşları küçültür.</string>
     <string name="pref__keyboard__group_keypress__label" comment="Preference group title">Tuşa basma</string>
@@ -607,6 +609,7 @@
     <string name="pref__gestures__delete_key_long_press__label" comment="Preference title">Silme tuşuna uzun bas</string>
     <string name="pref__gestures__swipe_velocity_threshold__label" comment="Preference title">Kaydırma hızı eşiği</string>
     <string name="pref__gestures__swipe_distance_threshold__label" comment="Preference title">Kaydırma mesafesi eşiği</string>
+    <string name="settings__help__title">Yardım</string>
     <string name="settings__other__title" comment="Title of Other settings">Diğer</string>
     <string name="pref__other__settings_theme__label" comment="Label of Settings theme preference in Other">Ayarlar teması</string>
     <string name="pref__other__settings_theme__auto_amoled" comment="Possible value of Settings theme preference in Other">Sistem varsayılanı (AMOLED)</string>
@@ -657,8 +660,8 @@
     <string name="setup__select_ime__title">{app_name} uygulamasını seçin</string>
     <string name="setup__select_ime__description">{app_name} artık sisteminizde etkin. Aktif olarak kullanmak için giriş seçici diyaloğunda seçerek {app_name} uygulamasına geçin!</string>
     <string name="setup__select_ime__switch_keyboard_btn">Klavyeyi Değiştir</string>
-    <string name="setup__grant_notification_permission__title">Kilitlenme Raporu Bildirimlerine İzin Verin</string>
-    <string name="setup__grant_notification_permission__description">Android 13+ itibarıyla, uygulamalar bildirim göndermek için izin istemelidir. Dictate\'da bu yalnızca bir kilitlenme durumunda kilitlenme raporu ekranını açmak için kullanılır. Bu izin sistem ayarlarından herhangi bir zamanda değiştirilebilir.</string>
+    <string name="setup__grant_notification_permission__title">Bildirimlere izin ver</string>
+    <string name="setup__grant_notification_permission__description">Android 13’ten itibaren uygulamalar bildirim göstermeden önce izin istemelidir. Dictate Keyboard, kayan düğme kayıt yaparken, bir konuşma modeli indirilirken ve saatiniz telefon üzerinden dikte ederken bir bildirim gösterir; uygulama çökerse bir kilitlenme raporu açar. Bunu istediğiniz zaman sistem ayarlarından değiştirebilirsiniz.</string>
     <string name="setup__grant_notification_permission__btn">İzin Ver</string>
     <string name="setup__finish_up__title">Bitir</string>
     <string name="setup__finish_up__description_p1">{app_name} sistemde etkin ve özelleştirilmeye hazır.</string>
@@ -904,7 +907,7 @@
     <string name="ext__addon_management_box__managing_placeholder">{extensions} Yönetiliyor</string>
     <string name="ext__addon_management_box__addon_manager_info">Eklentileri içe aktarma, dışa aktarma, oluşturma, özelleştirme ve kaldırma ile ilgili tüm görevler merkezi eklenti yöneticisi aracılığıyla halledilebilir.</string>
     <string name="ext__addon_management_box__go_to_page">{ext_home_title} sayfasına git</string>
-    <string name="ext__home__info">Dictate Eklenti Mağazası\'ndan eklentiler indirebilir ve yükleyebilir veya internetten indirdiğiniz herhangi bir eklenti dosyasını içe aktarabilirsiniz.</string>
+    <string name="ext__home__info">Eklentiler temalar, klavye düzenleri ve dil paketleri ekler. Eklemek için bir eklenti dosyasını içe aktarın; mevcut olanlar aşağıda listelenir.</string>
     <string name="ext__home__visit_store">Eklenti Mağazasını Ziyaret Et</string>
     <string name="ext__home__manage_extensions">Yüklü eklentileri yönet</string>
     <string name="ext__list__view_details">Ayrıntıları görüntüle</string>
@@ -1409,9 +1412,15 @@
     <string name="dictate__providers_test">Bağlantıyı test et</string>
     <string name="dictate__providers_test_transcribe">Yazıya dökmeyi sına</string>
     <string name="dictate__providers_check_no_key">Önce API anahtarınızı girin.</string>
-    <string name="dictate__providers_check_credentials_ok">Kimlik bilgileri doğrulandı · {count} model</string>
+    <plurals name="dictate__providers_check_credentials_ok">
+        <item quantity="one">Kimlik bilgileri doğrulandı · {count} model</item>
+        <item quantity="other">Kimlik bilgileri doğrulandı · {count} model</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_ok_nocount">Kimlik bilgileri doğrulandı</string>
-    <string name="dictate__providers_check_endpoint_ok">Sunucuya ulaşıldı · {count} model</string>
+    <plurals name="dictate__providers_check_endpoint_ok">
+        <item quantity="one">Sunucuya ulaşıldı · {count} model</item>
+        <item quantity="other">Sunucuya ulaşıldı · {count} model</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_untested">Yazıya dökme sınanmadı.</string>
     <string name="dictate__providers_check_transcription_ok">Yazıya dökme doğrulandı</string>
     <string name="dictate__providers_check_transcription_text">Şöyle döndü: “{text}”</string>
@@ -1419,6 +1428,8 @@
     <string name="dictate__providers_check_failed_connection">Bağlantı sınaması başarısız</string>
     <string name="dictate__providers_check_failed_transcription">Yazıya dökme sınaması başarısız</string>
     <string name="dictate__providers_check_err_auth">Anahtar reddedildi. Anahtarı ve adresin aynı hesaba ait olup olmadığını denetleyin.</string>
+    <string name="dictate__providers_check_err_model">Anahtar çalışıyor ancak bu modeli kullanamıyor. Başka bir model seçin veya bu modele sağlayıcının proje ayarlarında izin verin.</string>
+    <string name="dictate__error_model_unavailable">Model bu anahtar için kullanılamıyor</string>
     <string name="dictate__providers_check_err_quota">Anahtar çalışıyor ama hesabın kotası bitmiş ya da bir sınır aşılmış. Sağlayıcıdaki planınızı denetleyin.</string>
     <string name="dictate__providers_check_err_network">Sunucuya ulaşılamadı. Adresi ve internet bağlantınızı denetleyin.</string>
     <string name="dictate__providers_check_err_timeout">Zamanında yanıt gelmedi. Sağlayıcı yoğun olabilir — yeniden deneyin.</string>
@@ -1449,7 +1460,10 @@
     <string name="dictate__model_picker_title">Bir model seçin</string>
     <string name="dictate__model_picker_search">Bir model kimliği arayın veya yazın</string>
     <string name="dictate__model_picker_loading">Modeller yükleniyor…</string>
-    <string name="dictate__model_picker_count">{count} model</string>
+    <plurals name="dictate__model_picker_count">
+        <item quantity="one">{count} model</item>
+        <item quantity="other">{count} model</item>
+    </plurals>
     <string name="dictate__model_picker_refresh">Yenile</string>
     <string name="dictate__model_picker_use_custom">“{model}” kullan</string>
     <string name="dictate__recording_group">Kayıt</string>
@@ -2290,6 +2304,10 @@
     <string name="gif__error">GIF\'ler yüklenemedi. Bağlantınızı ve API anahtarınızı kontrol edin.</string>
     <string name="gif__setup_needed">GIF aramak için Ayarlar\'da ücretsiz bir KLIPY API anahtarı ekleyin</string>
     <string name="gif__setup_needed_action">GIF aramayı kur</string>
+    <string name="gif__search_off">GIF arama kapalı</string>
+    <string name="quick_action__forward_delete__tooltip">İmlecin sonrasındaki karakteri sil</string>
+    <string name="dictate__error_no_rewording_model">%1$s için bir yeniden ifade etme modeli seçin</string>
+    <string name="dictate__model_placeholder_required">zorunlu: bir model seçin veya yazın</string>
     <string name="gif__copied_to_clipboard">GIF panoya kopyalandı — yapıştırmak için uzun basın</string>
     <string name="gif__insert_failed">GIF eklenemedi</string>
     <string name="quick_action__ime_ui_mode_gif">GIF</string>

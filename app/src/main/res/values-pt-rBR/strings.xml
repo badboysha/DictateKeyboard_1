@@ -137,6 +137,7 @@
     <string name="settings__search__keywords__selection_metrics" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which shows how many words and characters are selected. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">contar palavras número de palavras caracteres comprimento estatísticas</string>
     <string name="settings__search__keywords__trim_on_copy" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which removes spaces and line breaks at the ends of copied text. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">cortar espaços remover limpar copiar recortar</string>
     <string name="settings__search__keywords__clear_cache">cache armazenamento espaço arquivos temporários liberar excluir limpar</string>
+    <string name="settings__search__keywords__keyboard_size">altura alto baixo maior menor redimensionar aumentar diminuir</string>
     <string name="settings__search__keywords__momentary_layer">segurar deslizar simbolo camada pontuacao temporario momentaneo 123 iphone</string>
     <string name="settings__search__keywords__emoji_row">emoji linha barra recentes usados acima teclado rápido</string>
     <string name="settings__search__keywords__request_timeout">tempo limite timeout lento espera conexão segundos</string>
@@ -372,6 +373,7 @@
     <string name="pref__keyboard__font_size_multiplier__label" comment="Preference title">Multiplicador do tamanho de fonte</string>
     <string name="pref__keyboard__group_layout__label" comment="Preference group title">Layout</string>
     <string name="pref__keyboard__landscape_input_ui_mode__label" comment="Preference value">Entrada do modo paisagem em tela cheia</string>
+    <string name="pref__keyboard__keyboard_size__label">Tamanho do teclado</string>
     <string name="pref__keyboard__key_spacing__label" comment="Preference title">Espaço entre as teclas</string>
     <string name="pref__keyboard__key_spacing__summary" comment="Preference summary">{v}% vertical, {h}% horizontal — um espaço maior deixa as teclas menores, não o teclado.</string>
     <string name="pref__keyboard__group_keypress__label" comment="Preference group title">Pressionar tecla</string>
@@ -505,6 +507,7 @@
     <string name="pref__gestures__delete_key_long_press__label" comment="Preference title">Apertar e segurar tecla de excluir</string>
     <string name="pref__gestures__swipe_velocity_threshold__label" comment="Preference title">Limite de velocidade do deslizamento</string>
     <string name="pref__gestures__swipe_distance_threshold__label" comment="Preference title">Limite de distância do deslizamento</string>
+    <string name="settings__help__title">Ajuda</string>
     <string name="settings__other__title" comment="Title of Other settings">Outro</string>
     <string name="pref__other__settings_theme__label" comment="Label of Settings theme preference in Other">Configurações de tema</string>
     <string name="pref__other__settings_theme__auto_amoled" comment="Possible value of Settings theme preference in Other">Padrão do sistema (AMOLED)</string>
@@ -553,11 +556,8 @@
     <string name="setup__select_ime__title">Selecionar {app_name}</string>
     <string name="setup__select_ime__description">{app_name} agora está ativado em seu sistema. Para usá-lo ativamente, mude para o {app_name} selecionando-o na caixa de diálogo do seletor de entrada!</string>
     <string name="setup__select_ime__switch_keyboard_btn">Mudar Teclado</string>
-    <string name="setup__grant_notification_permission__title">Permitir notificação com relatório de crash</string>
-    <string name="setup__grant_notification_permission__description">A partir do Android 13, aplicativos precisam pedir permissão para
-        enviar notificações. No Dictate, isso só é usado para abrir a tela de relatório de crash caso ocorra um crash.
-        Essa permissão pode ser alterada a qualquer momento nas configurações do sistema.
-    </string>
+    <string name="setup__grant_notification_permission__title">Permitir notificações</string>
+    <string name="setup__grant_notification_permission__description">A partir do Android 13, os aplicativos precisam pedir antes de mostrar notificações. O Dictate Keyboard mostra uma enquanto o botão flutuante grava, enquanto um modelo de voz é baixado e enquanto seu relógio dita pelo celular, e abre um relatório de erros se o app travar. Você pode mudar isso a qualquer momento nas configurações do sistema.</string>
     <string name="setup__grant_notification_permission__btn">Conceder permissão</string>
     <string name="setup__finish_up__title">Finalizar</string>
     <string name="setup__finish_up__description_p1">{app_name} agora está ativado no sistema e pronto para ser personalizado por você.</string>
@@ -769,7 +769,7 @@
     <string name="ext__addon_management_box__managing_placeholder">Gerenciando {extensions}</string>
     <string name="ext__addon_management_box__addon_manager_info">Todas as tarefas relacionadas à importação, exportação, criação, personalização e remoção de extensões podem ser realizadas pela central de gerenciamento de complementos.</string>
     <string name="ext__addon_management_box__go_to_page">Ir para {ext_home_title}</string>
-    <string name="ext__home__info">Você pode baixar e instalar extensões na Dictate Addons Store ou importar qualquer arquivo de extensão que tenha baixado da interne.</string>
+    <string name="ext__home__info">As extensões adicionam temas, layouts de teclado e pacotes de idioma. Importe um arquivo de extensão para adicionar uma; as que você tem aparecem abaixo.</string>
     <string name="ext__home__manage_extensions">Gerenciar extensões instaladas</string>
     <string name="ext__list__view_details">Ver detalhes</string>
     <string name="ext__check_updates__title">Verifique se há atualizações</string>
@@ -1234,9 +1234,15 @@
     <string name="dictate__providers_test">Testar conexão</string>
     <string name="dictate__providers_test_transcribe">Testar a transcrição</string>
     <string name="dictate__providers_check_no_key">Digite primeiro sua chave de API.</string>
-    <string name="dictate__providers_check_credentials_ok">Credenciais verificadas · {count} modelos</string>
+    <plurals name="dictate__providers_check_credentials_ok">
+        <item quantity="one">Credenciais verificadas · {count} modelo</item>
+        <item quantity="other">Credenciais verificadas · {count} modelos</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_ok_nocount">Credenciais verificadas</string>
-    <string name="dictate__providers_check_endpoint_ok">Servidor alcançado · {count} modelos</string>
+    <plurals name="dictate__providers_check_endpoint_ok">
+        <item quantity="one">Servidor alcançado · {count} modelo</item>
+        <item quantity="other">Servidor alcançado · {count} modelos</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_untested">Transcrição não testada.</string>
     <string name="dictate__providers_check_transcription_ok">Transcrição verificada</string>
     <string name="dictate__providers_check_transcription_text">Voltou como: “{text}”</string>
@@ -1244,6 +1250,8 @@
     <string name="dictate__providers_check_failed_connection">Falha no teste de conexão</string>
     <string name="dictate__providers_check_failed_transcription">Falha no teste de transcrição</string>
     <string name="dictate__providers_check_err_auth">A chave foi recusada. Confira a chave e se o endereço pertence à mesma conta.</string>
+    <string name="dictate__providers_check_err_model">A chave funciona, mas não pode usar este modelo. Escolha outro modelo ou libere este nas configurações do projeto no provedor.</string>
+    <string name="dictate__error_model_unavailable">Modelo indisponível para esta chave</string>
     <string name="dictate__providers_check_err_quota">A chave funciona, mas a conta ficou sem cota ou passou de um limite. Verifique seu plano com o provedor.</string>
     <string name="dictate__providers_check_err_network">Não foi possível alcançar o servidor. Confira o endereço e sua conexão com a internet.</string>
     <string name="dictate__providers_check_err_timeout">Sem resposta a tempo. O provedor pode estar ocupado — tente de novo.</string>
@@ -1274,7 +1282,10 @@
     <string name="dictate__model_picker_title">Escolher um modelo</string>
     <string name="dictate__model_picker_search">Pesquise ou digite um id de modelo</string>
     <string name="dictate__model_picker_loading">Carregando modelos…</string>
-    <string name="dictate__model_picker_count">{count} modelos</string>
+    <plurals name="dictate__model_picker_count">
+        <item quantity="one">{count} modelo</item>
+        <item quantity="other">{count} modelos</item>
+    </plurals>
     <string name="dictate__model_picker_refresh">Atualizar</string>
     <string name="dictate__model_picker_use_custom">Usar «{model}»</string>
     <string name="dictate__recording_group">Gravação</string>
@@ -2115,6 +2126,10 @@
     <string name="gif__error">Não foi possível carregar os GIFs. Verifique sua conexão e chave de API.</string>
     <string name="gif__setup_needed">Adicione uma chave de API gratuita da KLIPY nas Configurações para buscar GIFs</string>
     <string name="gif__setup_needed_action">Configurar busca de GIFs</string>
+    <string name="gif__search_off">A busca de GIFs está desativada</string>
+    <string name="quick_action__forward_delete__tooltip">Apagar o caractere após o cursor</string>
+    <string name="dictate__error_no_rewording_model">Escolha um modelo de reformulação para %1$s</string>
+    <string name="dictate__model_placeholder_required">obrigatório: escolha ou digite um modelo</string>
     <string name="gif__copied_to_clipboard">GIF copiado para a área de transferência — mantenha pressionado para colar</string>
     <string name="gif__insert_failed">Não foi possível inserir o GIF</string>
     <string name="quick_action__ime_ui_mode_gif">GIF</string>

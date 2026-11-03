@@ -139,6 +139,7 @@
     <string name="settings__search__keywords__selection_metrics" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which shows how many words and characters are selected. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">comptar paraules nombre de paraules caràcters longitud estadístiques</string>
     <string name="settings__search__keywords__trim_on_copy" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which removes spaces and line breaks at the ends of copied text. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">retallar espais eliminar netejar copiar tallar</string>
     <string name="settings__search__keywords__clear_cache">memòria cau espai emmagatzematge fitxers temporals alliberar esborrar netejar</string>
+    <string name="settings__search__keywords__keyboard_size">alçada alt baix més gran més petit redimensionar mida</string>
     <string name="settings__search__keywords__momentary_layer">mantenir lliscar simbol capa puntuacio temporal momentani 123 iphone</string>
     <string name="settings__search__keywords__emoji_row">emoji fila barra recents utilitzats sobre teclat ràpid</string>
     <string name="settings__search__keywords__request_timeout">temps d\'espera timeout lent esperar connexió segons</string>
@@ -381,6 +382,7 @@
     <string name="pref__keyboard__font_size_multiplier__label" comment="Preference title">Multiplicador de la mida de la font</string>
     <string name="pref__keyboard__group_layout__label" comment="Preference group title">Disposició</string>
     <string name="pref__keyboard__landscape_input_ui_mode__label" comment="Preference value">Entrada a pantalla completa apaïsada</string>
+    <string name="pref__keyboard__keyboard_size__label">Mida del teclat</string>
     <string name="pref__keyboard__key_spacing__label" comment="Preference title">Espai entre les tecles</string>
     <string name="pref__keyboard__key_spacing__summary" comment="Preference summary">{v} % vertical, {h} % horitzontal — un espai més gran fa les tecles més petites, no el teclat.</string>
     <string name="pref__keyboard__group_keypress__label" comment="Preference group title">Tecla premuda</string>
@@ -513,6 +515,7 @@
     <string name="pref__gestures__delete_key_long_press__label" comment="Preference title">Toc llarg a la tecla suprimeix</string>
     <string name="pref__gestures__swipe_velocity_threshold__label" comment="Preference title">Límit de velocitat del lliscament</string>
     <string name="pref__gestures__swipe_distance_threshold__label" comment="Preference title">Límit de distància del lliscament</string>
+    <string name="settings__help__title">Ajuda</string>
     <string name="settings__other__title" comment="Title of Other settings">Altres</string>
     <string name="pref__other__settings_theme__label" comment="Label of Settings theme preference in Other">Paràmetres del tema</string>
     <string name="pref__other__settings_theme__auto_amoled" comment="Possible value of Settings theme preference in Other">Per defecte del sistema (AMOLED)</string>
@@ -563,11 +566,8 @@
     <string name="setup__select_ime__title">Selecciona {app_name}</string>
     <string name="setup__select_ime__description">{app_name} s\'ha habilitat al sistema. Per usar-lo canvia a {app_name} al diàleg de selecció de mètode d\'entrada!</string>
     <string name="setup__select_ime__switch_keyboard_btn">Canvia el teclat</string>
-    <string name="setup__grant_notification_permission__title">Permet les notificacions d\'informes d\'errors</string>
-    <string name="setup__grant_notification_permission__description">Des d\'Android 13 i posteriors les aplicacions han de demanar permís per
-        enviar notificacions. Dictate només en fa ús per obrir una pantalla d\'informe d\'error en cas de fallada.
-        Aquest permís es pot modificar en qualsevol moment als paràmetres del sistema.
-    </string>
+    <string name="setup__grant_notification_permission__title">Permet les notificacions</string>
+    <string name="setup__grant_notification_permission__description">A partir d’Android 13, les aplicacions han de demanar-ho abans de mostrar notificacions. Dictate Keyboard en mostra una mentre el botó flotant enregistra, mentre es baixa un model de veu i mentre el teu rellotge dicta a través del telèfon, i obre un informe d’error si l’aplicació falla. Pots canviar-ho en qualsevol moment a la configuració del sistema.</string>
     <string name="setup__grant_notification_permission__btn">Concedeix permís</string>
     <string name="setup__finish_up__title">Finalitza</string>
     <string name="setup__finish_up__description_p1">{app_name} s\'habilitat al sistema i està preparat perquè el personalitzis.</string>
@@ -803,7 +803,7 @@
     <string name="ext__addon_management_box__managing_placeholder">Gestionant {extensions}</string>
     <string name="ext__addon_management_box__addon_manager_info">Totes les tasques referides a la importació, exportació, creació, personalització i supressió d\'extensions es poden gestionar a través de l\'administrador de complements centralitzat.</string>
     <string name="ext__addon_management_box__go_to_page">Ves a {ext_home_title}</string>
-    <string name="ext__home__info">Pots descarregar i instal·lar les extensions des de la botiga de complements de Dictate o importar qualsevol fitxer d\'extensió que hagis descarregat d\'internet.</string>
+    <string name="ext__home__info">Les extensions afegeixen temes, disposicions de teclat i paquets d’idioma. Importa un fitxer d’extensió per afegir-ne una; les que tens apareixen a sota.</string>
     <string name="ext__home__visit_store">Visita la botiga de complements</string>
     <string name="ext__home__manage_extensions">Administra les extensions instal·lades</string>
     <string name="ext__list__view_details">Visualitza els detalls</string>
@@ -1300,9 +1300,15 @@
     <string name="dictate__providers_test">Prova la connexió</string>
     <string name="dictate__providers_test_transcribe">Prova la transcripció</string>
     <string name="dictate__providers_check_no_key">Introduïu primer la clau API.</string>
-    <string name="dictate__providers_check_credentials_ok">Credencials verificades · {count} models</string>
+    <plurals name="dictate__providers_check_credentials_ok">
+        <item quantity="one">Credencials verificades · {count} model</item>
+        <item quantity="other">Credencials verificades · {count} models</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_ok_nocount">Credencials verificades</string>
-    <string name="dictate__providers_check_endpoint_ok">S’ha arribat al servidor · {count} models</string>
+    <plurals name="dictate__providers_check_endpoint_ok">
+        <item quantity="one">S’ha arribat al servidor · {count} model</item>
+        <item quantity="other">S’ha arribat al servidor · {count} models</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_untested">La transcripció no s’ha provat.</string>
     <string name="dictate__providers_check_transcription_ok">Transcripció verificada</string>
     <string name="dictate__providers_check_transcription_text">Ha tornat com a: «{text}»</string>
@@ -1310,6 +1316,8 @@
     <string name="dictate__providers_check_failed_connection">La prova de connexió ha fallat</string>
     <string name="dictate__providers_check_failed_transcription">La prova de transcripció ha fallat</string>
     <string name="dictate__providers_check_err_auth">La clau s’ha rebutjat. Comproveu-la i que l’adreça pertanyi al mateix compte.</string>
+    <string name="dictate__providers_check_err_model">La clau funciona, però no pot fer servir aquest model. Tria un altre model o permet aquest a la configuració del projecte del proveïdor.</string>
+    <string name="dictate__error_model_unavailable">Model no disponible per a aquesta clau</string>
     <string name="dictate__providers_check_err_quota">La clau funciona, però el compte no té quota o ha superat un límit. Reviseu el vostre pla amb el proveïdor.</string>
     <string name="dictate__providers_check_err_network">No s’ha pogut arribar al servidor. Comproveu l’adreça i la connexió a internet.</string>
     <string name="dictate__providers_check_err_timeout">Sense resposta a temps. El proveïdor pot estar ocupat: torneu-ho a provar.</string>
@@ -1340,7 +1348,10 @@
     <string name="dictate__model_picker_title">Tria un model</string>
     <string name="dictate__model_picker_search">Cerca o escriu un id de model</string>
     <string name="dictate__model_picker_loading">Carregant els models…</string>
-    <string name="dictate__model_picker_count">{count} models</string>
+    <plurals name="dictate__model_picker_count">
+        <item quantity="one">{count} model</item>
+        <item quantity="other">{count} models</item>
+    </plurals>
     <string name="dictate__model_picker_refresh">Actualitza</string>
     <string name="dictate__model_picker_use_custom">Usa «{model}»</string>
     <string name="dictate__recording_group">Gravació</string>
@@ -2181,6 +2192,10 @@
     <string name="gif__error">No s\'han pogut carregar els GIFs. Comprova la connexió i la clau d\'API.</string>
     <string name="gif__setup_needed">Afegeix una clau gratuïta de l\'API de KLIPY a Configuració per cercar GIFs</string>
     <string name="gif__setup_needed_action">Configura la cerca de GIFs</string>
+    <string name="gif__search_off">La cerca de GIFs està desactivada</string>
+    <string name="quick_action__forward_delete__tooltip">Esborra el caràcter després del cursor</string>
+    <string name="dictate__error_no_rewording_model">Tria un model de reformulació per a %1$s</string>
+    <string name="dictate__model_placeholder_required">obligatori: tria o escriu un model</string>
     <string name="gif__copied_to_clipboard">GIF copiat al porta-retalls — mantén premut per enganxar</string>
     <string name="gif__insert_failed">No s\'ha pogut inserir el GIF</string>
     <string name="quick_action__ime_ui_mode_gif">GIF</string>

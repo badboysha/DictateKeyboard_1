@@ -41,12 +41,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import dev.patrickgold.florisboard.dictate.dictateProxyConfig
 import dev.patrickgold.florisboard.dictate.provider.DictateApiException
 import dev.patrickgold.florisboard.dictate.provider.OpenAiCompatibleClient
 import dev.patrickgold.florisboard.dictate.provider.ProviderPreset
 import dev.patrickgold.jetpref.material.ui.JetPrefAlertDialog
 import kotlinx.coroutines.launch
 import org.florisboard.lib.compose.florisDialogScroll
+import org.florisboard.lib.compose.pluralsRes
 import org.florisboard.lib.compose.stringRes
 
 /** Whether the picker is choosing a speech-to-text or a chat/rewording model. */
@@ -97,6 +99,7 @@ fun ModelPickerDialog(
                     preset, apiKey,
                     baseUrlOverride = preset.baseUrl,
                     trustUserCerts = trustUserCerts,
+                    proxy = prefs.dictate.dictateProxyConfig(),
                     timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
                 )
                 .listModels()
@@ -184,7 +187,7 @@ fun ModelPickerDialog(
                 val statusText = when {
                     loading -> stringRes(R.string.dictate__model_picker_loading)
                     error != null -> error!!
-                    else -> stringRes(R.string.dictate__model_picker_count, "count" to candidates.size)
+                    else -> pluralsRes(R.plurals.dictate__model_picker_count, candidates.size, "count" to candidates.size)
                 }
                 Text(text = statusText, modifier = Modifier.weight(1f))
                 TextButton(

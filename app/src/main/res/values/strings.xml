@@ -41,6 +41,7 @@
     <string name="gif__error" comment="Shown when a GIF request fails">Couldn\'t load GIFs. Check your connection and API key.</string>
     <string name="gif__setup_needed" comment="Empty state prompting the user to add a key">Add a free KLIPY API key in Settings to search GIFs</string>
     <string name="gif__setup_needed_action" comment="Button to open settings">Set up GIF search</string>
+    <string name="gif__search_off" comment="Empty state of the GIF panel while the user has switched GIF search off in the settings">GIF search is turned off</string>
     <string name="gif__copied_to_clipboard" comment="Toast when a GIF is copied as a fallback">GIF copied to clipboard — long-press to paste</string>
     <string name="gif__insert_failed" comment="Toast when a GIF could not be inserted or copied">Couldn\'t insert the GIF</string>
     <!-- Scan text (issue #390) -->
@@ -214,6 +215,7 @@
     <string name="quick_action__clipboard_select_all" comment="Please mind the limited available space for the quick action strings">Select all</string>
     <string name="quick_action__clipboard_select_all__tooltip">Perform clipboard select all</string>
     <string name="quick_action__forward_delete" comment="Please mind the limited available space for the quick action strings">Forward delete</string>
+    <string name="quick_action__forward_delete__tooltip">Delete the character after the cursor</string>
     <string name="quick_action__ime_ui_mode_clipboard" comment="Please mind the limited available space for the quick action strings">Clipboard</string>
     <string name="quick_action__ime_ui_mode_clipboard__tooltip">Open clipboard history</string>
     <string name="quick_action__ime_ui_mode_media" comment="Please mind the limited available space for the quick action strings">Emoji</string>
@@ -310,6 +312,7 @@
     <string name="settings__search__keywords__momentary_layer" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which lets you hold the ?123 key, slide onto a symbol and have the letters come back when you let go. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">hold slide symbol layer peek shift momentary temporary 123 punctuation iphone</string>
     <string name="settings__search__keywords__emoji_row" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which shows a row of recent emojis above the keyboard. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">emoji row recent used strip bar above keyboard smiley quick</string>
     <string name="settings__search__keywords__clear_cache" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which empties the app\'s temporary files. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">cache storage space temporary files free up delete clean</string>
+    <string name="settings__search__keywords__keyboard_size" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the Keyboard size setting (the keyboard\'s height). Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">height tall short bigger smaller larger resize</string>
     <string name="settings__search__keywords__request_timeout" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting for how long a request may take. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">timeout timed out slow waiting connection seconds gave up</string>
     <string name="settings__search__keywords__floating_side_buttons" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting choosing which small buttons appear beside the floating button: cancel, pause and undo. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">undo cancel pause resume discard</string>
 
@@ -680,6 +683,7 @@
     <string name="pref__keyboard__font_size_multiplier__label" comment="Preference title">Font size multiplier</string>
     <string name="pref__keyboard__group_layout__label" comment="Preference group title">Layout</string>
     <string name="pref__keyboard__landscape_input_ui_mode__label" comment="Preference value">Landscape fullscreen input</string>
+    <string name="pref__keyboard__keyboard_size__label" comment="Preference title. Tapping it opens the keyboard with handles for dragging its height">Keyboard size</string>
     <string name="pref__keyboard__key_spacing__label" comment="Preference title">Gap between keys</string>
     <string name="pref__keyboard__key_spacing__summary" comment="Preference summary">{v}% vertical, {h}% horizontal — a wider gap makes the keys smaller, not the keyboard.</string>
     <string name="pref__keyboard__group_keypress__label" comment="Preference group title">Key press</string>
@@ -865,6 +869,7 @@
     <string name="pref__gestures__swipe_velocity_threshold__label" comment="Preference title">Swipe velocity threshold</string>
     <string name="pref__gestures__swipe_distance_threshold__label" comment="Preference title">Swipe distance threshold</string>
 
+    <string name="settings__help__title" comment="Row on the settings home screen that opens the online user guide (a wiki with explanations and screenshots)">Help</string>
     <string name="settings__other__title" comment="Title of Other settings">Other</string>
     <string name="pref__other__settings_theme__label" comment="Label of Settings theme preference in Other">Settings theme</string>
     <string name="pref__other__settings_theme__auto_amoled" comment="Possible value of Settings theme preference in Other">System default (AMOLED)</string>
@@ -1241,11 +1246,8 @@
     <string name="setup__select_ime__description">{app_name} is now enabled in your system. To actively use it, switch to {app_name} by selecting it in the input selector dialog!</string>
     <string name="setup__select_ime__switch_keyboard_btn">Switch Keyboard</string>
 
-    <string name="setup__grant_notification_permission__title">Permit Crash Report Notifications</string>
-    <string name="setup__grant_notification_permission__description">As of Android 13+, apps must ask for permission to
-        send notifications. In Dictate Keyboard, this is only used to open a crash report screen in the event of a crash.
-        This permission can be changed at any time in the system settings.
-    </string>
+    <string name="setup__grant_notification_permission__title">Allow notifications</string>
+    <string name="setup__grant_notification_permission__description">As of Android 13, apps must ask before they show notifications. Dictate Keyboard shows one while the floating button records, while a speech model downloads and while your watch dictates through the phone, and it opens a crash report if the app crashes. You can change this at any time in the system settings.</string>
     <string name="setup__grant_notification_permission__btn">Grant Permission</string>
 
     <!-- Setup: connect an AI provider (Dictate onboarding for non-technical users) -->
@@ -1565,7 +1567,7 @@
     <string name="ext__addon_management_box__managing_placeholder">Managing {extensions}</string>
     <string name="ext__addon_management_box__addon_manager_info">All tasks related to importing, exporting, creating, customizing, and removing extensions can be handled through the centralized addon manager.</string>
     <string name="ext__addon_management_box__go_to_page">Go to {ext_home_title}</string>
-    <string name="ext__home__info">You can download and install extensions from the Dictate Keyboard Addons Store or import any extension file you have downloaded from the internet.</string>
+    <string name="ext__home__info">Extensions add themes, keyboard layouts and language packs. Import an extension file to add one; the ones you have are listed below.</string>
     <string name="ext__home__visit_store">Visit Addons Store</string>
     <string name="ext__home__manage_extensions">Manage installed extensions</string>
     <string name="ext__list__view_details">View details</string>
@@ -2006,6 +2008,7 @@
     <string name="dictate__voice_input_hint" comment="Subtle hint under the orb in the voice-input UI (issue #67)">Tap to send</string>
     <string name="dictate__voice_ime_label" comment="Name of the Dictate voice input method shown in system keyboard settings (issue #67)">Dictate voice input</string>
     <string name="dictate__error_no_api_key" comment="Error when no API key is configured">No API key set – configure it in the Dictate settings.</string>
+    <string name="dictate__error_no_rewording_model" comment="Error when a rewording is asked for but the rewording provider has no model chosen and no default of its own. %1$s is the provider's name, e.g. Mistral AI or Ollama.">Choose a rewording model for %1$s</string>
     <string name="dictate__error_transcription_failed" comment="Generic transcription failure">Transcription failed.</string>
     <string name="dictate__error_unknown" comment="Unknown transcription error">Unknown error during transcription.</string>
     <string name="dictate__error_rewording_failed" comment="Generic rewording (GPT) failure">Rewording failed.</string>
@@ -2082,6 +2085,7 @@
     <string name="dictate__api_key_not_set" comment="Summary shown when no API key is set">Not set – tap to configure</string>
     <string name="dictate__model_title" comment="Label for the transcription model field">Transcription model</string>
     <string name="dictate__model_placeholder" comment="Placeholder hint for the model field">leave empty for provider default</string>
+    <string name="dictate__model_placeholder_required" comment="Placeholder hint for the rewording model field of a provider that has no default model, so one must be chosen">required: pick or type a model</string>
     <string name="dictate__model_default_summary" comment="Summary shown when no model override is set">Provider default</string>
     <string name="dictate__custom_server_title" comment="Group title for custom server settings">Custom server</string>
     <string name="dictate__base_url_title" comment="Label for the custom server base URL field">Base URL</string>
@@ -2135,9 +2139,15 @@
     <string name="dictate__providers_test" comment="Button that checks whether the provider accepts the entered API key and endpoint">Test connection</string>
     <string name="dictate__providers_test_transcribe" comment="Button that sends a short bundled speech sample through the selected transcription model">Test transcription</string>
     <string name="dictate__providers_check_no_key" comment="Shown when a test is started before an API key has been entered">Enter your API key first.</string>
-    <string name="dictate__providers_check_credentials_ok" comment="Successful connection test at a provider with a live model catalog. {count} is the number of models it returned.">Credentials verified · {count} models</string>
+    <plurals name="dictate__providers_check_credentials_ok" comment="Successful connection test at a provider with a live model catalog. {count} is the number of models it returned.">
+        <item quantity="one">Credentials verified · {count} model</item>
+        <item quantity="other">Credentials verified · {count} models</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_ok_nocount" comment="Successful connection test at a provider whose model list ships with the app, so no model count was learned from the network">Credentials verified</string>
-    <string name="dictate__providers_check_endpoint_ok" comment="Successful connection test at a server that asks for no key at all, such as a local Ollama. {count} is the number of models it returned.">Server reached · {count} models</string>
+    <plurals name="dictate__providers_check_endpoint_ok" comment="Successful connection test at a server that asks for no key at all, such as a local Ollama. {count} is the number of models it returned.">
+        <item quantity="one">Server reached · {count} model</item>
+        <item quantity="other">Server reached · {count} models</item>
+    </plurals>
     <string name="dictate__providers_check_credentials_untested" comment="Second line after a successful connection test, saying what was not checked">Transcription not tested.</string>
     <string name="dictate__providers_check_transcription_ok" comment="Successful transcription test: the provider returned a transcript for the sample">Transcription verified</string>
     <string name="dictate__providers_check_transcription_text" comment="Second line after a successful transcription test, showing what came back. {text} is the transcript.">Came back as: “{text}”</string>
@@ -2145,6 +2155,8 @@
     <string name="dictate__providers_check_failed_connection" comment="Headline when the connection test failed">Connection test failed</string>
     <string name="dictate__providers_check_failed_transcription" comment="Headline when the transcription test failed">Transcription test failed</string>
     <string name="dictate__providers_check_err_auth" comment="What to do when the provider rejected the key">The key was rejected. Check it, and that the endpoint belongs to the same account.</string>
+    <string name="dictate__providers_check_err_model" comment="What to do when the key is valid but may not use the chosen model, e.g. an OpenAI project with a model allow-list">The key works, but may not use this model. Choose another model, or allow this one in the provider’s project settings.</string>
+    <string name="dictate__error_model_unavailable" comment="Short error: the key is valid but may not use the chosen model, or the model does not exist">Model not available for this key</string>
     <string name="dictate__providers_check_err_quota" comment="What to do when the key works but the account has nothing left to spend">The key works, but the account is out of quota or over a rate limit. Check your plan with the provider.</string>
     <string name="dictate__providers_check_err_network" comment="What to do when the server could not be reached at all">The server could not be reached. Check the address and your internet connection.</string>
     <string name="dictate__providers_check_err_timeout" comment="What to do when the provider did not answer in time">No answer in time. The provider may be busy — try again.</string>
@@ -2258,7 +2270,10 @@
     <string name="dictate__model_picker_title" comment="Title of the model picker dialog">Choose a model</string>
     <string name="dictate__model_picker_search" comment="Hint for the model search / free-text field">Search or type a model id</string>
     <string name="dictate__model_picker_loading" comment="Status while fetching the model catalog">Loading models…</string>
-    <string name="dictate__model_picker_count" comment="Status showing how many models match. {count} is a number.">{count} models</string>
+    <plurals name="dictate__model_picker_count" comment="Status showing how many models match. {count} is a number.">
+        <item quantity="one">{count} model</item>
+        <item quantity="other">{count} models</item>
+    </plurals>
     <string name="dictate__model_picker_refresh" comment="Button that fetches the live model catalog from the provider">Refresh</string>
     <string name="dictate__model_picker_use_custom" comment="Option to use the typed text as a model id. {model} is the typed text.">Use “{model}”</string>
 
