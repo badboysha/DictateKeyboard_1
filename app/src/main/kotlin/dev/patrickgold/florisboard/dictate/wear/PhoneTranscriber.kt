@@ -13,9 +13,11 @@ package dev.patrickgold.florisboard.dictate.wear
 import android.content.Context
 import dev.patrickgold.florisboard.app.FlorisPreferenceModel
 import dev.patrickgold.florisboard.dictate.DictateLanguages
+import dev.patrickgold.florisboard.dictate.customWordList
 import dev.patrickgold.florisboard.dictate.data.prompts.DictatePromptDefaults
 import dev.patrickgold.florisboard.dictate.data.prompts.PromptsDatabaseHelper
 import dev.patrickgold.florisboard.dictate.dictateProxyConfig
+import dev.patrickgold.florisboard.dictate.promptReasoningWire
 import dev.patrickgold.florisboard.dictate.provider.DictateRewording
 import dev.patrickgold.florisboard.dictate.provider.LocalTranscriptionProvider
 import dev.patrickgold.florisboard.dictate.provider.OpenAiCompatibleClient
@@ -26,6 +28,9 @@ import dev.patrickgold.florisboard.dictate.provider.TranscriptionRequest
 import dev.patrickgold.florisboard.dictate.provider.chatModelFor
 import dev.patrickgold.florisboard.dictate.provider.rewordingBlocker
 import dev.patrickgold.florisboard.dictate.provider.rewordingKeyFor
+import dev.patrickgold.florisboard.dictate.rewordingReasoningWire
+import dev.patrickgold.florisboard.dictate.transcriptionStyleBasePrompt
+import dev.patrickgold.florisboard.dictate.transcriptionStylePrompt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -57,6 +62,9 @@ object PhoneTranscriber {
                 activeCode = prefs.dictate.activeInputLanguage.get(),
                 selectionRaw = prefs.dictate.inputLanguages.get(),
             ),
+            // The keyboard's prompt and custom words (#466), as a watch calling the provider itself sends.
+            prompt = transcriptionStylePrompt(prefs),
+            vocabulary = customWordList(prefs),
         )
 
         val transcript = if (preset.transcriptionApi == TranscriptionApi.LOCAL_ONDEVICE) {
@@ -77,6 +85,9 @@ object PhoneTranscriber {
                 timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
             )
             client.transcribe(request).text.trim()
+        }.let { text ->
+            // Silence can come back as the sample sentence, as on the keyboard (#77): nothing was said.
+            if (DictatePromptDefaults.looksLikeStylePromptEcho(text, transcriptionStyleBasePrompt(prefs))) "" else text
         }
         // Auto-reword the tethered dictation here on the phone (#130), so the watch receives finished text
         // exactly like the phone produces — but only when the user kept auto-rewording on for the watch.
@@ -113,7 +124,11 @@ object PhoneTranscriber {
         val autoApply = withContext(Dispatchers.IO) {
             PromptsDatabaseHelper.getInstance(context).getAll()
                 .filter { it.autoApply }
-                .mapNotNull { p -> p.prompt?.takeIf { it.isNotBlank() }?.let { DictateRewording.Prompt(it) } }
+                .mapNotNull { p ->
+                    p.prompt?.takeIf { it.isNotBlank() }?.let {
+                        DictateRewording.Prompt(it, promptReasoningWire(rewordingAccount, rewordingPreset, chatModel, p))
+                    }
+                }
         }
         val languageName = DictateLanguages.englishNameFor(prefs.dictate.activeInputLanguage.get())
         val systemPrompt = when (prefs.dictate.systemPromptSelection.get()) {
@@ -131,7 +146,7 @@ object PhoneTranscriber {
             languageName = languageName,
             systemPrompt = systemPrompt,
             autoApplyPrompts = autoApply,
-            reasoningEffort = rewordingPreset.reasoningEffortWhenOff(chatModel),
+            reasoningEffort = rewordingReasoningWire(rewordingAccount, rewordingPreset, chatModel),
         )
     }
 

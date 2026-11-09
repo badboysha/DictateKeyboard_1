@@ -10,6 +10,7 @@
 
 package dev.patrickgold.florisboard.dictate.provider
 
+import dev.patrickgold.florisboard.app.PreferenceJson
 import dev.patrickgold.florisboard.lib.devtools.flogError
 import dev.patrickgold.jetpref.datastore.model.PreferenceSerializer
 import kotlinx.serialization.Serializable
@@ -36,6 +37,13 @@ data class ProviderAccount(
     val customBaseUrl: String = "",
     val transcriptionModel: String = "",
     val chatModel: String = "",
+    /**
+     * How much the rewording model thinks, in the provider's own word (`none`, `low`, `xhigh`…); empty is the
+     * default, which sends no field except where the app has its own (gpt-6-luna: none). Lives here and not
+     * in a global setting because the words belong to the model (provider catalog, 2026-11-04). Additive,
+     * empty for accounts stored before it; older versions skip it, the keyring JSON ignores unknown keys.
+     */
+    val chatReasoning: String = "",
     /**
      * Chosen real-time streaming model for this provider (issue #128); empty = use the preset's
      * defaultRealtimeModel. Additive field, defaults empty for older stored accounts. Only meaningful
@@ -356,7 +364,7 @@ data class ProviderAccounts(
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         override fun serialize(value: ProviderAccounts): String =
-            json.encodeToString(value)
+            PreferenceJson.encode(json.encodeToString(value))
 
         override fun deserialize(value: String): ProviderAccounts =
             deserializeOrNull(value) ?: Empty
@@ -371,7 +379,7 @@ data class ProviderAccounts(
          * two can never drift apart.
          */
         fun deserializeOrNull(value: String): ProviderAccounts? = try {
-            json.decodeFromString<ProviderAccounts>(value)
+            json.decodeFromString<ProviderAccounts>(PreferenceJson.decode(value))
         } catch (e: Exception) {
             flogError { "Failed to deserialize ProviderAccounts: $e" }
             null

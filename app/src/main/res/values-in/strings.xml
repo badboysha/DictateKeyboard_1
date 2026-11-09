@@ -141,6 +141,7 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="settings__search__keywords__text_expansion" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the typing-shortcut setting, which lets a short trigger expand into a saved block of text. Translate as the words people in your language would actually type when looking for that feature, separated by spaces. Do not translate word for word; add or drop terms as makes sense.">ekspansi teks singkatan pintasan cuplikan makro teks otomatis templat snippet text expansion</string>
     <string name="settings__search__keywords__selection_metrics" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which shows how many words and characters are selected. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">hitung kata jumlah kata karakter panjang statistik</string>
     <string name="settings__search__keywords__trim_on_copy" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which removes spaces and line breaks at the ends of copied text. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">pangkas spasi hapus bersihkan salin potong</string>
+    <string name="settings__search__keywords__final_full_stop" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which leaves the full stop off a dictation of one sentence. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">titik tanda baca akhir kalimat tanpa titik</string>
     <string name="settings__search__keywords__clear_cache">cache penyimpanan ruang berkas sementara mengosongkan hapus bersihkan</string>
     <string name="settings__search__keywords__keyboard_size">tinggi pendek lebih besar lebih kecil ubah ukuran perbesar perkecil</string>
     <string name="settings__search__keywords__momentary_layer">tahan geser simbol lapisan tanda baca sementara sesaat 123 iphone</string>
@@ -680,6 +681,17 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="backup_and_restore__back_up__credentials_warning">Arsip ini memuat kunci API dan kata sandi Anda dalam teks biasa, beserta saldo Dictate Cloud Anda — siapa pun yang menerimanya bisa mendikte atas biaya Anda. Jangan meneruskannya, dan jika sudah, gantilah kuncinya di penyedia Anda. Semua hal lain yang dicentang di bawah ikut terbawa, termasuk riwayat transkripsi dan papan klip Anda.</string>
     <string name="backup_and_restore__back_up__credentials_excluded_note">Arsip ini tidak memuat kunci API, kata sandi, maupun saldo Dictate Cloud, jadi boleh diteruskan, tetapi juga tidak akan memulihkan milik Anda. Semua hal lain yang dicentang di bawah tetap ada di dalamnya, termasuk riwayat transkripsi dan papan klip Anda.</string>
     <string name="backup_and_restore__back_up__personal_content_note">Arsip ini tidak memuat kunci API dan kata sandi, tetapi memuat semua yang dicentang di bawah: riwayat transkripsi beserta rekaman yang disimpan, papan klip, prompt Anda, dan kata-kata yang dipelajari papan ketik dari Anda.</string>
+    <string name="backup_and_restore__back_up__encrypted_note">Arsip ini dienkripsi dengan kata sandi Anda, dan semua yang dicentang di bawah hanya dapat dipulihkan dengan kata sandi tersebut. Jika Anda lupa kata sandinya, tidak ada yang bisa memulihkan cadangan ini, bahkan Anda sendiri.</string>
+    <string name="backup_and_restore__back_up__password">Perlindungan kata sandi</string>
+    <string name="backup_and_restore__back_up__password_enabled">Enkripsi dengan kata sandi</string>
+    <string name="backup_and_restore__back_up__password_too_short">Minimal {count} karakter</string>
+    <string name="backup_and_restore__back_up__password_mismatch">Kata sandi tidak cocok</string>
+    <string name="backup_and_restore__password">Kata sandi</string>
+    <string name="backup_and_restore__password_repeat">Ulangi kata sandi</string>
+    <string name="backup_and_restore__restore__encrypted">Arsip cadangan ini dilindungi kata sandi. Masukkan kata sandi untuk melihat isinya.</string>
+    <string name="backup_and_restore__restore__unlock">Buka kunci</string>
+    <string name="backup_and_restore__restore__wrong_password">Kata sandi salah</string>
+    <string name="backup_and_restore__restore__encrypted_unreadable">Arsip ini tidak dapat dibuka. Arsip rusak, atau dibuat dengan versi Dictate yang lebih baru.</string>
     <string name="backup_and_restore__back_up__files_ime_keyboard">Ekstensi papan ketik</string>
     <string name="backup_and_restore__back_up__files_ime_spelling">Ekstensi / kamus ejaan</string>
     <string name="backup_and_restore__back_up__files_ime_theme">Ekstensi tema</string>
@@ -1266,8 +1278,6 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="dictate__remember_last_dictation_summary">Menyimpan dikte terakhir Anda agar tombol mengambang dapat membatalkannya dan tata letak klasik dapat menyisipkannya kembali.</string>
     <string name="dictate__remember_last_dictation_title">Ingat dikte terakhir</string>
     <string name="changelog__v4_2_0">• BARU: tombol dikte mengambang — dikte langsung ke aplikasi apa pun, bahkan saat keyboard lain aktif. Pilih dari tiga gaya (Pil, Cincin, Bola), lihat gelombang langsung saat Anda berbicara, seret ke mana saja dengan pengancingan tepi, atur warna dan ukurannya, dan tekan lama untuk menyusun ulang. Aktifkan di Setelan ▸ Dictate ▸ Tombol mengambang.\n• BARU: Google Gemini — gunakan kunci API AI Studio Anda sendiri untuk transkripsi dan penulisan ulang.\n• Prompt kini muncul secara bawaan dalam baris tetap di atas tombol.\n• Penyisipan teks yang lebih andal di seluruh aplikasi, termasuk peramban dan keyboard lain.</string>
-    <string name="dictate__promo_floating_button_message">Baru: dikte di app mana pun</string>
-    <string name="dictate__promo_floating_button_action">Coba</string>
     <string name="setup__floating_button__btn">Siapkan tombol mengambang</string>
     <string name="setup__nav_back">Kembali</string>
     <string name="setup__nav_next">Berikutnya</string>
@@ -1376,6 +1386,7 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="dictate__providers_region_eu">Uni Eropa</string>
     <string name="dictate__providers_region_jp">Jepang</string>
     <string name="dictate__providers_region_in">India</string>
+    <string name="dictate__providers_region_cn">Tiongkok (daratan)</string>
     <string name="dictate__providers_region_global">Seluruh dunia</string>
     <string name="dictate__providers_custom_title">Server kustom</string>
     <string name="dictate__providers_get_key">Dapatkan kunci API</string>
@@ -1469,6 +1480,8 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="dictate__paragraph_split_title">Bagi menjadi paragraf</string>
     <string name="dictate__paragraph_split_off">Nonaktif</string>
     <string name="dictate__paragraph_split_value">Setelah {n} kata</string>
+    <string name="dictate__drop_final_full_stop_title">Hilangkan titik di akhir</string>
+    <string name="dictate__drop_final_full_stop_summary">Hanya jika dikte berupa satu kalimat; beberapa kalimat tetap memakai semua tanda baca</string>
     <string name="dictate__realtime_title">Transkripsi waktu nyata</string>
     <string name="dictate__realtime_summary">Mentranskripsi saat Anda berbicara, bukan setelah berhenti, untuk penyedia yang mendukungnya</string>
     <string name="dictate__realtime_mode_off">Nonaktif</string>
@@ -1602,7 +1615,9 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="dictate__prompt_auto_apply_title">Terapkan otomatis</string>
     <string name="dictate__prompt_auto_apply_summary">Jalankan perintah ini secara otomatis pada setiap transkripsi</string>
     <string name="dictate__prompt_reasoning_title">Penalaran</string>
-    <string name="dictate__prompt_reasoning_default">Bawaan</string>
+    <string name="dictate__prompt_reasoning_default">Pengaturan penyedia</string>
+    <string name="dictate__prompt_reasoning_little">Sedikit penalaran</string>
+    <string name="dictate__prompt_reasoning_much">Banyak penalaran</string>
     <string name="dictate__prompt_badge_selection">Memerlukan pilihan</string>
     <string name="dictate__prompt_badge_auto">Diterapkan otomatis</string>
     <string name="dictate__example_prompt_fix_grammar_name">Perbaiki Tata Bahasa</string>
@@ -1883,7 +1898,8 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="dictate__promo_milestone_count">%s dikte dengan Dictate! 🎉</string>
     <string name="dictate__promo_milestone_action">Statistik</string>
     <string name="dictate__reasoning_effort_title">Upaya penalaran</string>
-    <string name="dictate__reasoning_effort_off">Mati</string>
+    <string name="dictate__reasoning_effort_off">Bawaan penyedia</string>
+    <string name="dictate__reasoning_effort_none">Tanpa penalaran</string>
     <string name="dictate__reasoning_effort_off_summary">Bawaan penyedia — biarkan mati untuk model non-penalaran</string>
     <string name="dictate__reasoning_effort_minimal">Minimal</string>
     <string name="dictate__reasoning_effort_minimal_summary">Tercepat, paling sedikit berpikir</string>
@@ -1892,6 +1908,9 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="dictate__reasoning_effort_medium">Sedang</string>
     <string name="dictate__reasoning_effort_medium_summary">Seimbang antara berpikir dan kecepatan</string>
     <string name="dictate__reasoning_effort_high">Tinggi</string>
+    <string name="dictate__reasoning_effort_xhigh">Sangat tinggi</string>
+    <string name="dictate__reasoning_effort_max">Maksimum</string>
+    <string name="dictate__reasoning_effort_app_default">{name} (bawaan)</string>
     <string name="dictate__reasoning_effort_high_summary">Paling banyak berpikir, lebih lambat</string>
     <string name="dictate__reasoning_effort_custom">Kustom</string>
     <string name="dictate__action_save_audio">Simpan audio</string>
@@ -2373,6 +2392,25 @@ Klik di sini untuk menyelesaikan masalah ini.</string>
     <string name="dictate__action_top_up">Isi ulang saldo</string>
     <string name="dictate__promo_low_credit_message">Saldo hampir habis.</string>
     <string name="dictate__promo_low_credit_action">Isi ulang</string>
+    <string name="dictate__promo_sayova_message">App baru: AI di jam tangan</string>
+    <string name="dictate__promo_sayova_action">Lihat</string>
+    <string name="about__more_apps__title">App lainnya</string>
+    <string name="about__more_apps__summary">SayOVA dan TunerToGo untuk jam tangan Anda</string>
+    <string name="about__more_apps__tunertogo_tagline">Penyetem instrumen untuk Wear OS</string>
+    <string name="about__more_apps__tunertogo_description">Penyetem presisi yang selalu ada di pergelangan tangan, siap begitu Anda mengambil instrumen.</string>
+    <string name="about__more_apps__tunertogo_feature_instruments">Gitar, bas, ukulele, biola, dan lainnya, dengan deteksi senar otomatis</string>
+    <string name="about__more_apps__tunertogo_feature_chromatic">Mode kromatik untuk instrumen lain dan untuk suara Anda</string>
+    <string name="about__more_apps__tunertogo_feature_vibration">Getaran singkat saat senar sudah pas, jadi mata tetap pada pasak</string>
+    <string name="about__more_apps__tunertogo_feature_privacy">Tanpa akses internet, tanpa iklan: suara dianalisis di jam tangan dan tidak pernah disimpan</string>
+    <string name="about__more_apps__tunertogo_requirements">Memerlukan jam tangan dengan Wear OS 3 atau lebih baru dan mikrofon. Berfungsi tanpa aplikasi ponsel.</string>
+    <string name="about__more_apps__intro">Juga dari DevEmperor, pengembang Dictate:</string>
+    <string name="about__more_apps__sayova_tagline">Asisten suara AI untuk Wear OS</string>
+    <string name="about__more_apps__sayova_description">Bicara dengan Google Gemini atau OpenAI langsung dari jam tangan: bicara secara alami, menyela kapan saja, dan membaca jawaban sambil mendengarkannya.</string>
+    <string name="about__more_apps__sayova_feature_interpreter">Juru bahasa antara 21 bahasa, kedua pihak ditampilkan sebagai teks</string>
+    <string name="about__more_apps__sayova_feature_tasks">Menyetel timer dan alarm, menyimpan catatan, dan mencari di web</string>
+    <string name="about__more_apps__sayova_feature_phone">Menyiapkan pesan, janji, dan rute di ponsel Anda, siap Anda kirim</string>
+    <string name="about__more_apps__sayova_feature_privacy">Kunci API Anda sendiri: tanpa akun, tanpa pelacakan, open source</string>
+    <string name="about__more_apps__sayova_requirements">Memerlukan jam tangan dengan Wear OS 3 atau lebih baru dan mikrofon, serta kunci API dari Google Gemini atau OpenAI. Penggunaan ditagih oleh penyedia Anda.</string>
     <string name="prefs__media__sticker__title">Stiker</string>
     <string name="prefs__media__sticker_folder__title">Folder stiker</string>
     <string name="prefs__media__sticker_folder__summary_unset">Pilih folder berisi gambar milikmu sendiri</string>

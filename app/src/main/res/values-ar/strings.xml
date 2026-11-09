@@ -138,6 +138,7 @@
     <string name="settings__search__keywords__text_expansion" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the typing-shortcut setting, which lets a short trigger expand into a saved block of text. Translate as the words people in your language would actually type when looking for that feature, separated by spaces. Do not translate word for word; add or drop terms as makes sense.">توسيع النص اختصار قصاصة ماكرو نص تلقائي snippet text expansion</string>
     <string name="settings__search__keywords__selection_metrics" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which shows how many words and characters are selected. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">عدد الكلمات عداد الأحرف الطول إحصائيات</string>
     <string name="settings__search__keywords__trim_on_copy" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which removes spaces and line breaks at the ends of copied text. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">اقتصاص مسافات إزالة تنظيف نسخ قص</string>
+    <string name="settings__search__keywords__final_full_stop" comment="NOT SHOWN ANYWHERE — extra search terms that lead to the setting which leaves the full stop off a dictation of one sentence. Translate as the words people in your language would actually type when looking for it, separated by spaces. Do not translate word for word.">نقطة ترقيم علامات الترقيم نهاية الجملة بدون نقطة</string>
     <string name="settings__search__keywords__clear_cache">ذاكرة مؤقتة تخزين مساحة ملفات مؤقتة تحرير حذف تنظيف</string>
     <string name="settings__search__keywords__keyboard_size">ارتفاع طول أكبر أصغر تكبير تصغير تغيير الحجم</string>
     <string name="settings__search__keywords__momentary_layer">ضغط مطول سحب رمز طبقة ترقيم مؤقت 123 iphone</string>
@@ -572,6 +573,17 @@
     <string name="backup_and_restore__back_up__credentials_warning">يحتوي هذا الأرشيف على مفاتيح API وكلمات المرور الخاصة بك بنص واضح، إلى جانب رصيدك في Dictate Cloud — ومن يحصل عليه يمكنه الإملاء على حسابك. لا تُشاركه، وإذا كنت قد شاركته بالفعل فغيِّر المفتاح عند مزوّدك. كل ما هو محدَّد أدناه يرحل معه أيضًا، بما في ذلك سجل النسخ النصي والحافظة.</string>
     <string name="backup_and_restore__back_up__credentials_excluded_note">لا يحتوي هذا الأرشيف على مفاتيح API أو كلمات مرور أو رصيد Dictate Cloud، فيمكن مشاركته، لكنه لن يستعيد مفاتيحك كذلك. كل ما هو محدَّد أدناه لا يزال فيه، بما في ذلك سجل النسخ النصي والحافظة.</string>
     <string name="backup_and_restore__back_up__personal_content_note">لا يحتوي هذا الأرشيف على مفاتيح API أو كلمات مرور، لكنه يحتوي على كل ما هو محدَّد أدناه: سجل النسخ النصي مع التسجيلات المحفوظة، والحافظة، ومطالباتك، والكلمات التي تعلّمتها لوحة المفاتيح منك.</string>
+    <string name="backup_and_restore__back_up__encrypted_note">هذا الأرشيف مشفَّر بكلمة المرور الخاصة بك، ولا يمكن استعادة كل ما هو محدَّد أدناه إلا بها. إذا نسيت كلمة المرور، فلن يتمكن أحد من استعادة هذه النسخة الاحتياطية، ولا حتى أنت.</string>
+    <string name="backup_and_restore__back_up__password">الحماية بكلمة مرور</string>
+    <string name="backup_and_restore__back_up__password_enabled">التشفير بكلمة مرور</string>
+    <string name="backup_and_restore__back_up__password_too_short">{count} أحرف على الأقل</string>
+    <string name="backup_and_restore__back_up__password_mismatch">كلمتا المرور غير متطابقتين</string>
+    <string name="backup_and_restore__password">كلمة المرور</string>
+    <string name="backup_and_restore__password_repeat">أعد إدخال كلمة المرور</string>
+    <string name="backup_and_restore__restore__encrypted">أرشيف النسخ الاحتياطي هذا محميّ بكلمة مرور. أدخلها لترى محتواه.</string>
+    <string name="backup_and_restore__restore__unlock">فتح القفل</string>
+    <string name="backup_and_restore__restore__wrong_password">كلمة المرور غير صحيحة</string>
+    <string name="backup_and_restore__restore__encrypted_unreadable">لا يمكن فتح هذا الأرشيف. إما أنه تالف، أو أنه أُنشئ بإصدار أحدث من Dictate.</string>
     <string name="backup_and_restore__back_up__files_ime_keyboard">ملحقات لوحة المفاتيح</string>
     <string name="backup_and_restore__back_up__files_ime_spelling">ملحقات التهجئة/ القاموس</string>
     <string name="backup_and_restore__back_up__files_ime_theme">ملحقات السمات</string>
@@ -1170,8 +1182,6 @@
     <string name="dictate__remember_last_dictation_summary">يحتفظ بآخر إملاء لك حتى يتمكن الزر العائم من التراجع عنه والتخطيط الكلاسيكي من إدراجه مجددًا.</string>
     <string name="dictate__remember_last_dictation_title">تذكّر آخر إملاء</string>
     <string name="changelog__v4_2_0">• جديد: زر إملاء عائم — أملِ مباشرةً في أي تطبيق، حتى عندما تكون لوحة مفاتيح أخرى نشطة. اختر من بين ثلاثة أنماط (كبسولة، حلقة، كرة)، وشاهد موجة صوتية حية أثناء التحدث، واسحبه إلى أي مكان مع الالتصاق بالحواف، واضبط لونه وحجمه، واضغط مطولاً لإعادة الصياغة. فعّله من الإعدادات ▸ Dictate ▸ الزر العائم.\n• جديد: Google Gemini — استخدم مفتاح API الخاص بك من AI Studio للنسخ وإعادة الصياغة.\n• تظهر المطالبات الآن افتراضيًا في صف ثابت فوق المفاتيح.\n• إدراج نص أكثر موثوقية عبر التطبيقات، بما في ذلك المتصفحات ولوحات المفاتيح الأخرى.</string>
-    <string name="dictate__promo_floating_button_message">جديد: أملِ في أي تطبيق</string>
-    <string name="dictate__promo_floating_button_action">جرّبه</string>
     <string name="setup__floating_button__btn">إعداد الزر العائم</string>
     <string name="setup__nav_back">رجوع</string>
     <string name="setup__nav_next">التالي</string>
@@ -1280,6 +1290,7 @@
     <string name="dictate__providers_region_eu">الاتحاد الأوروبي</string>
     <string name="dictate__providers_region_jp">اليابان</string>
     <string name="dictate__providers_region_in">الهند</string>
+    <string name="dictate__providers_region_cn">الصين (البر الرئيسي)</string>
     <string name="dictate__providers_region_global">عالميًا</string>
     <string name="dictate__providers_custom_title">خادم مخصّص</string>
     <string name="dictate__providers_get_key">الحصول على مفتاح API</string>
@@ -1388,6 +1399,8 @@
     <string name="dictate__paragraph_split_title">التقسيم إلى فقرات</string>
     <string name="dictate__paragraph_split_off">إيقاف</string>
     <string name="dictate__paragraph_split_value">بعد {n} كلمة</string>
+    <string name="dictate__drop_final_full_stop_title">حذف النقطة في النهاية</string>
+    <string name="dictate__drop_final_full_stop_summary">فقط عندما يكون الإملاء جملة واحدة؛ تحتفظ الجمل المتعددة بكل علامات الترقيم</string>
     <string name="dictate__realtime_title">النسخ الفوري</string>
     <string name="dictate__realtime_summary">يُفرِّغ الكلام أثناء التحدث بدلاً من الانتظار حتى التوقف، للمزوّدين الذين يدعمون ذلك</string>
     <string name="dictate__realtime_mode_off">إيقاف</string>
@@ -1521,7 +1534,9 @@
     <string name="dictate__prompt_auto_apply_title">تطبيق تلقائي</string>
     <string name="dictate__prompt_auto_apply_summary">شغّل هذه المطالبة تلقائيًا على كل عملية تفريغ نصي</string>
     <string name="dictate__prompt_reasoning_title">التفكير</string>
-    <string name="dictate__prompt_reasoning_default">افتراضي</string>
+    <string name="dictate__prompt_reasoning_default">إعداد المزوّد</string>
+    <string name="dictate__prompt_reasoning_little">تفكير قليل</string>
+    <string name="dictate__prompt_reasoning_much">تفكير كثير</string>
     <string name="dictate__prompt_badge_selection">يتطلّب تحديدًا</string>
     <string name="dictate__prompt_badge_auto">يُطبَّق تلقائيًا</string>
     <string name="dictate__example_prompt_fix_grammar_name">تصحيح القواعد</string>
@@ -1807,7 +1822,8 @@
     <string name="dictate__promo_milestone_count">%s إملاء مع Dictate! 🎉</string>
     <string name="dictate__promo_milestone_action">الإحصاءات</string>
     <string name="dictate__reasoning_effort_title">مقدار التفكير</string>
-    <string name="dictate__reasoning_effort_off">إيقاف</string>
+    <string name="dictate__reasoning_effort_off">الافتراضي للمزوّد</string>
+    <string name="dictate__reasoning_effort_none">بلا تفكير</string>
     <string name="dictate__reasoning_effort_off_summary">الإعداد الافتراضي للمزوّد — اتركه مطفأً للنماذج غير الاستدلالية</string>
     <string name="dictate__reasoning_effort_minimal">الأدنى</string>
     <string name="dictate__reasoning_effort_minimal_summary">الأسرع، أقل تفكير</string>
@@ -1816,6 +1832,9 @@
     <string name="dictate__reasoning_effort_medium">متوسط</string>
     <string name="dictate__reasoning_effort_medium_summary">توازن بين التفكير والسرعة</string>
     <string name="dictate__reasoning_effort_high">مرتفع</string>
+    <string name="dictate__reasoning_effort_xhigh">مرتفع جدًا</string>
+    <string name="dictate__reasoning_effort_max">أقصى</string>
+    <string name="dictate__reasoning_effort_app_default">{name} (افتراضي)</string>
     <string name="dictate__reasoning_effort_high_summary">أكثر تفكيرًا، أبطأ</string>
     <string name="dictate__reasoning_effort_custom">مخصص</string>
     <string name="dictate__action_save_audio">حفظ الصوت</string>
@@ -2297,6 +2316,25 @@
     <string name="dictate__action_top_up">شحن الرصيد</string>
     <string name="dictate__promo_low_credit_message">الرصيد شارف على النفاد.</string>
     <string name="dictate__promo_low_credit_action">شحن</string>
+    <string name="dictate__promo_sayova_message">تطبيق جديد: ذكاء اصطناعي في ساعتك</string>
+    <string name="dictate__promo_sayova_action">اكتشف</string>
+    <string name="about__more_apps__title">تطبيقات أخرى</string>
+    <string name="about__more_apps__summary">SayOVA وTunerToGo لساعتك</string>
+    <string name="about__more_apps__tunertogo_tagline">مُدوزن آلات موسيقية لنظام Wear OS</string>
+    <string name="about__more_apps__tunertogo_description">مُدوزن دقيق على معصمك دائمًا، جاهز لحظة تمسك آلتك.</string>
+    <string name="about__more_apps__tunertogo_feature_instruments">الغيتار والباص واليوكوليلي والكمان وغيرها، مع التعرّف التلقائي على الأوتار</string>
+    <string name="about__more_apps__tunertogo_feature_chromatic">وضع كروماتي لأي آلة أخرى ولصوتك</string>
+    <string name="about__more_apps__tunertogo_feature_vibration">اهتزاز قصير عند ضبط الوتر، فتبقى عيناك على المفاتيح</string>
+    <string name="about__more_apps__tunertogo_feature_privacy">بلا اتصال بالإنترنت وبلا إعلانات: يُحلَّل الصوت على الساعة ولا يُحفظ أبدًا</string>
+    <string name="about__more_apps__tunertogo_requirements">يتطلب ساعة بنظام Wear OS 3 أو أحدث مزوّدة بميكروفون. يعمل دون تطبيق على الهاتف.</string>
+    <string name="about__more_apps__intro">من DevEmperor أيضًا، مطوّر Dictate:</string>
+    <string name="about__more_apps__sayova_tagline">مساعد صوتي بالذكاء الاصطناعي لنظام Wear OS</string>
+    <string name="about__more_apps__sayova_description">تحدّث مع Google Gemini أو OpenAI مباشرةً من ساعتك: تكلّم بطبيعية، وقاطِع متى شئت، واقرأ الإجابة أثناء سماعها.</string>
+    <string name="about__more_apps__sayova_feature_interpreter">مترجم فوري بين 21 لغة، مع عرض الطرفين نصًا</string>
+    <string name="about__more_apps__sayova_feature_tasks">يضبط المؤقتات والمنبهات، ويحفظ الملاحظات، ويبحث في الويب</string>
+    <string name="about__more_apps__sayova_feature_phone">يجهّز الرسائل والمواعيد والمسارات على هاتفك لترسلها بنفسك</string>
+    <string name="about__more_apps__sayova_feature_privacy">مفتاح API الخاص بك: بلا حساب، بلا تتبّع، مفتوح المصدر</string>
+    <string name="about__more_apps__sayova_requirements">يتطلب ساعة بنظام Wear OS 3 أو أحدث مزوّدة بميكروفون، ومفتاح API من Google Gemini أو OpenAI. يحاسبك مزوّد الخدمة على الاستخدام.</string>
     <string name="prefs__media__sticker__title">الملصقات</string>
     <string name="prefs__media__sticker_folder__title">مجلد الملصقات</string>
     <string name="prefs__media__sticker_folder__summary_unset">اختر مجلدًا يحتوي على صورك الخاصة</string>
