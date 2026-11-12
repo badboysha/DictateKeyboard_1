@@ -338,6 +338,20 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
             else -> null
         }
 
+        /**
+         * Whether [word] (lowercase) is as usual with a capital as without in [language], while its
+         * dictionary entry is the small one: nothing about it says which a dictation opening with it in
+         * the middle of a sentence meant, so it keeps the capital its provider gave it (#476). German formal
+         * address, and „Guten Morgen“ — measured on the emulator as „Ich glaube, sie kommen“ and „Guten
+         * morgen“ before this list (2026-11-11). The bigram table cannot decide it: it is stored small.
+         * A language with a measured list beside its dictionary has that as well ([mixedCaseFor]).
+         */
+        internal fun capitalAlsoUsualIn(word: String, language: String): Boolean =
+            language.equals("de", ignoreCase = true) && word in GERMAN_CAPITAL_ALSO_USUAL
+
+        private val GERMAN_CAPITAL_ALSO_USUAL =
+            setOf("sie", "ihnen", "ihr", "ihre", "ihrem", "ihren", "ihrer", "ihres", "morgen")
+
         // Legacy ISO-639 codes that java.util.Locale still reports; map them to the modern code the
         // dictionary files use.
         private val LANG_ALIASES = mapOf("iw" to "he", "in" to "id", "ji" to "yi")
@@ -673,6 +687,14 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
         fun formsOf(key: String): List<String> = variants[key] ?: listOfNotNull(canonical[key])
 
         /**
+         * Whether this dictionary writes any word with a capital at all, i.e. whether a word it stores small
+         * is small for a reason. The bundled English list stored everything small, `tuesday` included, until
+         * tools/glide-dict/recase.py gave it its capitals (#476); generate.py still writes a language without
+         * a Hunspell dictionary all in lowercase.
+         */
+        val knowsCase: Boolean by lazy { canonical.values.any { it.firstOrNull()?.isUpperCase() == true } }
+
+        /**
          * How to show [key] when a context table says the corpus wrote it [written] there (issue #451):
          * the dictionary's own form of that spelling, so a noun keeps its capital; the corpus spelling
          * itself when the dictionary has no such form; and the most frequent spelling without one. Showing
@@ -690,6 +712,23 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
     }
 
     private val lowerIndexByLang = guardedByLock { mutableMapOf<String, LowerIndex>() }
+
+    private val mixedCaseByLang = guardedByLock { mutableMapOf<String, Set<String>>() }
+
+    /**
+     * The words [lang]'s dictionary stores small although a corpus writes them with a capital mid-sentence at
+     * least half the time — `ben`, `terry`, `frank`, and `north` from North Carolina (#476). Too often small
+     * to be capitalised when typed, too often a name for a dictation to take a provider's capital off them.
+     * Measured by tools/glide-dict/recase.py --mixed into `ime/dict/<lang>_case_mixed.txt`, so far for the
+     * bundled English list only; empty for every other language.
+     */
+    private suspend fun mixedCaseFor(lang: String): Set<String> = mixedCaseByLang.withLock { cache ->
+        cache.getOrPut(lang) {
+            runCatching { appContext.assets.readText("ime/dict/${lang}_case_mixed.txt") }.getOrNull()
+                ?.lineSequence()?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+                .orEmpty()
+        }
+    }
 
     // Lexicographically sorted word list per language, used by the beam decoder to prune partial paths that
     // are no longer a prefix of any real word (issue #242). Shares its strings with the LowerIndex, so this
@@ -798,6 +837,37 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
             if (lowerIndexForLang(lang).canonical[lower]?.first()?.isLowerCase() == true) return true
         }
         return false
+    }
+
+    /**
+     * Which words a dictation may write small when it opens in the middle of a sentence (#476): those one
+     * of the user's keyboard languages writes small, and none only with a capital. The dictionaries store a
+     * word capitalised exactly when its lowercase spelling is wrong, so a German noun, a name or English `I`
+     * keep their capital; a word no dictionary knows keeps it too.
+     *
+     * Only dictionaries that write some words with a capital have a say ([LowerIndex.knowsCase]): the
+     * bundled English list used to store every word small, could not tell `again` from `tuesday`, and took
+     * the capital off every name (emulator, 2026-11-11) until it was re-cased. English `I` keeps its
+     * capital by the same rule that capitalises it when typed ([standaloneCapitalizationIn]), and a word as
+     * usual with a capital as without keeps the provider's ([capitalAlsoUsualIn], [mixedCaseFor]).
+     *
+     * Every configured keyboard language counts, not just the active one: a dictation is in whichever
+     * language the user spoke. Each index is loaded once and then shared with typing.
+     */
+    suspend fun writtenSmallMidSentence(): (String) -> Boolean {
+        val langs = LinkedHashSet<String>()
+        runCatching { subtypeManager.subtypes.forEach { s -> dictLangFor(s)?.let { langs.add(it) } } }
+        val indexes = langs.map { lowerIndexForLang(it) }.filter { it.freq.isNotEmpty() && it.knowsCase }
+        val mixed = langs.map { mixedCaseFor(it) }
+        return { word ->
+            val lower = word.lowercase()
+            val standalone = mixed.any { lower in it } ||
+                langs.any { standaloneCapitalizationIn(lower, it) != null || capitalAlsoUsualIn(lower, it) }
+            val spellings = indexes.mapNotNull { index ->
+                index.formsOf(index.fold(word)).firstOrNull { it.equals(word, ignoreCase = true) }
+            }
+            !standalone && spellings.isNotEmpty() && spellings.none { it.first().isUpperCase() }
+        }
     }
 
     /**

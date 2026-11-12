@@ -390,11 +390,21 @@ private class OpenAiRealtimeSession(
 }
 
 /**
- * Soniox streaming transcription over `wss://stt-rt.soniox.com/transcribe-websocket`. The API key and
- * config go in the first JSON message (no auth header); 16 kHz mono PCM16 is streamed as raw binary
- * frames. Each `tokens[]` message carries `is_final` tokens (permanent) plus a replaceable tail; the full
- * text (permanent + tail) is emitted as the partial, and the permanent text as the final on flush. An
- * empty frame flushes; the server replies `finished:true` and closes.
+ * Soniox streaming transcription over `wss://stt-rt.soniox.com/transcribe-websocket`. The API key goes in
+ * the `Authorization: Bearer` header of the upgrade request, the config in the first JSON message; 16 kHz
+ * mono PCM16 is streamed as raw binary frames. Each `tokens[]` message carries `is_final` tokens
+ * (permanent) plus a replaceable tail; the full text (permanent + tail) is emitted as the partial, and the
+ * permanent text as the final on flush. An empty frame flushes; the server replies `finished:true` and
+ * closes.
+ *
+ * The key used to travel as `api_key` in the config message. Soniox refuses that from 2027-01-15 (#475;
+ * docs.soniox.com/authentication/migrate-websocket-authentication, read 2026-11-11). Asked of the endpoint
+ * the same day: the header alone transcribes exactly as the config key did; a key in both places must be
+ * the same one, or the stream is refused with 400.
+ *
+ * A refusal arrives as a frame, not as a failed handshake: the upgrade succeeds, the server answers the
+ * config with `{"error_code":401,"error_type":"unauthenticated","error_message":…}` and closes normally
+ * (1000). Unread, that looked like a dictation that simply said nothing.
  *
  * [wsUrl] is the streaming host of the account's data-residency region (#403), taken as given: Soniox
  * publishes it per region alongside the REST one, and a key is only a credential inside its own region.
@@ -423,7 +433,10 @@ private class SonioxRealtimeSession(
 
     fun connect() {
         val url = wsUrl?.takeIf { it.isNotBlank() } ?: URL
-        ws = client.newWebSocket(Request.Builder().url(url).build(), listener)
+        ws = client.newWebSocket(
+            Request.Builder().url(url).header("Authorization", "Bearer $apiKey").build(),
+            listener,
+        )
     }
 
     private val listener = object : WebSocketListener() {
@@ -439,6 +452,13 @@ private class SonioxRealtimeSession(
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             val obj = runCatching { json.parseToJsonElement(text).jsonObject }.getOrNull() ?: return
+            // An error ends the stream, and whatever it had transcribed is not the whole dictation:
+            // failing makes the controller transcribe the recording instead.
+            obj["error_code"]?.let { code ->
+                val message = obj["error_message"]?.jsonPrimitive?.contentOrNull ?: ""
+                emitError(RuntimeException("Soniox realtime error ${code.jsonPrimitive.content}: $message"))
+                return
+            }
             obj["tokens"]?.jsonArray?.let { tokens ->
                 val tail = StringBuilder()
                 for (tk in tokens) {
@@ -459,7 +479,6 @@ private class SonioxRealtimeSession(
     }
 
     private fun config(): String = buildJsonObject {
-        put("api_key", apiKey)
         put("model", model)
         put("audio_format", "pcm_s16le")
         put("sample_rate", 16_000)
@@ -547,12 +566,8 @@ internal class AssemblyAiRealtimeSession(
     private val speechModel = model.trim().takeUnless { it.isEmpty() || it == LEGACY_MODEL_ID }
         ?: ProviderRegistry.ASSEMBLYAI.defaultRealtimeModel.orEmpty()
 
-    // One code the model does not know fails the whole session, so the list is cut to the ones it does.
     private val languageCodes = if (speechModel in MULTILINGUAL_PRO_MODELS) {
-        languageHintsOf(language, expectedLanguages)
-            .map { it.substringBefore('-').lowercase() }
-            .filter { it in PRO_LANGUAGE_CODES }
-            .distinct()
+        universalProLanguageCodes(language, expectedLanguages)
     } else {
         emptyList()
     }
@@ -572,7 +587,8 @@ internal class AssemblyAiRealtimeSession(
 
         /**
          * Universal-3.6 Pro's languages, as the endpoint lists them when it refuses an unknown one
-         * (2026-10-20). Its docs say 32; the list is 32 plus `multi`, which means nothing to us.
+         * (2026-10-20). Its docs say 32; the list is 32 plus `multi`, which means nothing to us. The
+         * Dictation endpoint, which runs on the same model, refuses with the same 32 (2026-11-11, #478).
          */
         val PRO_LANGUAGE_CODES = setOf(
             "en", "es", "de", "fr", "it", "pt", "tr", "nl", "sv", "no", "da", "fi", "hi", "vi", "ar", "he",
@@ -1523,6 +1539,18 @@ internal fun languageHintsOf(language: String?, expectedLanguages: List<String>)
     return (if (pinned != null) listOf(pinned) else expectedLanguages)
         .filter { it.isNotBlank() && it != "detect" }
 }
+
+/**
+ * [languageHintsOf] as AssemblyAI's Universal-3.6 Pro takes them in `language_codes`, on the streaming
+ * socket and the Dictation endpoint alike: base subtags (`pt-BR` is refused, `pt` taken), and only codes of
+ * [AssemblyAiRealtimeSession.PRO_LANGUAGE_CODES], since one code the model does not know fails the whole
+ * request.
+ */
+internal fun universalProLanguageCodes(language: String?, expectedLanguages: List<String>): List<String> =
+    languageHintsOf(language, expectedLanguages)
+        .map { it.substringBefore('-').lowercase() }
+        .filter { it in AssemblyAiRealtimeSession.PRO_LANGUAGE_CODES }
+        .distinct()
 
 /**
  * The first [len] bytes of [pcm16] in Base64, unwrapped, as the sockets that frame audio as JSON want it.
