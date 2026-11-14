@@ -45,9 +45,34 @@ Usage:
         --also <…>/en_GB --corpus eng-com_web-public_2018_1M \\
         --mixed app/src/main/assets/ime/dict/en_case_mixed.txt --dry-run
 
+    recase.py dist/hr.json dist/hunspell/hr --corpus hrv_news_2020_1M \\
+        --mixed app/src/main/assets/ime/dict/hr_case_mixed.txt --dry-run
+
+Croatian (#476, 2026-11-13) is the first generated list it ran on. generate.py had cased it with Hunspell
+alone, and the Croatian dictionary takes marko, sara and uskrs in lowercase as readily as with a capital,
+so only the corpus can tell. THREE_LETTER_NOT_NAMES is English and applies to en.json alone: on Croatian it
+took the capital off Rom. AS_IS holds, per language, the words read out of the dry run that the corpus
+would capitalise but that are everyday lowercase words as well; they keep the list's casing, and a small
+one can still go into the --mixed list.
+
+--mixed-only writes the --mixed list against the list's casing as it stands and leaves the list alone, for a
+list that has its capitals already and only lacks the words that are both (German Essen/essen, #480); the
+Hunspell argument is then `-`.
+
+--strict (#480, the languages after English and Croatian) adds capitals and never takes one away, and only to
+words Hunspell does not know in lowercase at all: João, Lisboa, Danmark. A word it does know small (Portuguese
+carneiro, a ram, also a surname the news writes with a capital) stays small and goes into the --mixed list,
+so a dictation keeps the speech service's capital on it while typing it does not change. That replaces reading
+every dry run word by word, which English and Croatian got and thirteen more languages would not have. On those
+thirteen (2026-11-13) it found nothing to capitalise: generate.py kept a word small exactly where Hunspell takes
+it small, so every name such a list writes small is one Hunspell also knows as a word (Portuguese maria, Danish
+danmark). Their fix is the --mixed list alone, written with --mixed-only against the lists as published, and so
+is German's (Zeit, Liebe, Essen, small in its list for the verbs).
+
 Requires the `hunspell` binary; a --corpus package is downloaded into dist/corpora on first use (~230 MB).
-The list is rewritten in place in the format it was read in (json.dumps defaults plus a final newline — the
-format en.json has); --dry-run prints what would change against the file as it is instead.
+The list is rewritten in place in the format it was read in (json.dumps defaults plus a final newline, the
+format en.json has, or generate.py's compact UTF-8 without one); --dry-run prints what would change against
+the file as it is instead.
 """
 import json
 import os
@@ -66,6 +91,23 @@ THREE_LETTER_NOT_NAMES = {
     "pfc", "pte", "pty", "que", "rom", "sgt", "snr", "sta", "ste", "sur", "tex", "wac", "wis",
 }
 
+# Per language (the list's file name), words whose casing the list keeps, read out of the dry run: the news
+# corpus writes them with a capital almost always, but people type them as ordinary words too.
+#   hr (2026-11-13): mario (nije mario, "didn't care"), monitor, lokomotivu (a Zagreb club, and a locomotive),
+#   rima/rimu (Rome, and rhyme), luki (the name, and "in the port"), macan (tomcat, a good-looking man),
+#   zlatan (golden, "zlatan si"), nosić (little nose), trut (drone bee), the adjectives latinskoj and
+#   rumunjskoj (Latin, Romanian, beside Latin America and Romania), and the forms of sjedinjen and ujedinjen
+#   (united) that the corpus would capitalise, so each paradigm stays one casing like the forms that are
+#   capitalised only half the time. The other way: Krim (Crimea) keeps the capital Hunspell gave it, which
+#   72 corpus sightings, mostly the abbreviation krim., are too few to take away.
+AS_IS = {
+    "hr": {
+        "mario", "monitor", "lokomotivu", "rima", "rimu", "luki", "macan", "zlatan", "nosić", "trut",
+        "latinskoj", "rumunjskoj", "sjedinjenih", "sjedinjene", "sjedinjenim", "ujedinjenih", "ujedinjenog",
+        "ujedinjenom", "krim",
+    },
+}
+
 LETTER_PLURAL = re.compile(r"^[a-z]'s$")
 
 # The corpus share below which a capital Hunspell asks for stays off: generate.py's reverse rule.
@@ -74,6 +116,10 @@ CORPUS_LOWER_SHARE = 0.6
 # The capitalised share from which a word that stays small goes into the --mixed list: as often a capital
 # as not, so nothing says which one a dictation opening with it meant.
 MIXED_SHARE = 0.5
+
+# The formats a list is read and written back in: en.json's (json.dumps defaults, final newline) and
+# generate.py's (compact, UTF-8 as it is, no final newline).
+FORMATS = [({}, "\n"), ({"ensure_ascii": False, "separators": (",", ":")}, "")]
 
 
 def capital_share(word: str, forms: dict):
@@ -96,19 +142,19 @@ def rejected(words, dictionary: str) -> set:
     return set(proc.stdout.split("\n")) - {""}
 
 
-def wanted(word: str) -> bool:
+def wanted(word: str, lang: str) -> bool:
     """Whether [word] may take a capital at all, before any dictionary is asked (see the module doc)."""
     if LETTER_PLURAL.match(word):
         return False
     if len(word) <= 2:
         return word in TWO_LETTER_TITLES
-    return word not in THREE_LETTER_NOT_NAMES
+    return lang != "en" or word not in THREE_LETTER_NOT_NAMES
 
 
-def casing(lowers: list, dictionary: str, also: list, forms: dict) -> dict:
+def casing(lowers: list, dictionary: str, also: list, forms: dict, lang: str) -> dict:
     """lowercase word → its capitalised spelling, for the words that take one. [forms] from
     load_mid_sentence_forms, or None for Hunspell alone."""
-    candidates = [w for w in lowers if wanted(w)]
+    candidates = [w for w in lowers if wanted(w, lang)]
     not_small = rejected(candidates, dictionary)
     for other in also:
         not_small &= rejected(sorted(not_small), other)
@@ -137,6 +183,19 @@ def casing(lowers: list, dictionary: str, also: list, forms: dict) -> dict:
     return cased
 
 
+def strict_casing(lowers: list, words: list, dictionary: str, forms: dict, lang: str) -> dict:
+    """lowercase word → capitalised spelling under --strict: every capital the list has, plus the corpus
+    spelling of each small word that Hunspell rejects in lowercase."""
+    cased = {low: old for low, old in zip(lowers, words) if old != low}
+    candidates = [w for w in lowers if w not in cased and wanted(w, lang)]
+    unknown_small = rejected(candidates, dictionary)
+    spelled = {w: f for w in candidates if w in unknown_small and (f := corpus_spelling(w, forms)) is not None}
+    print(f"strict: {len(unknown_small)} small words Hunspell does not know in lowercase, "
+          f"{len(spelled)} of them capitalised by the corpus", file=sys.stderr)
+    cased.update(spelled)
+    return cased
+
+
 def mixed(lowers: list, cased: dict, forms: dict) -> list:
     """The words that stay small although the corpus capitalises them at least MIXED_SHARE of the time."""
     shares = {w: capital_share(w, forms) for w in lowers if w not in cased}
@@ -146,6 +205,8 @@ def mixed(lowers: list, cased: dict, forms: dict) -> list:
 def main() -> None:
     argv = sys.argv[1:]
     dry_run = "--dry-run" in argv
+    mixed_only = "--mixed-only" in argv
+    strict = "--strict" in argv
     also, corpus, mixed_path, args = [], "", "", []
     i = 0
     while i < len(argv):
@@ -161,19 +222,42 @@ def main() -> None:
         if not argv[i].startswith("--"):
             args.append(argv[i])
         i += 1
-    if len(args) != 2 or (mixed_path and not corpus):
+    if len(args) != 2 or (mixed_path and not corpus) or (mixed_only and not mixed_path) or (strict and not corpus):
         sys.exit(__doc__)
     path, dictionary = args
     text = open(path, encoding="utf-8").read()
     words = json.loads(text)
-    if json.dumps(words) + "\n" != text:
-        sys.exit(f"{path} is not in the format this tool writes back; nothing changed")
+    fmt = next(((opts, end) for opts, end in FORMATS if json.dumps(words, **opts) + end == text), None)
+    if fmt is None:
+        sys.exit(f"{path} is not in a format this tool writes back; nothing changed")
     lowers = [w.lower() for w in words]
     if len(set(lowers)) != len(lowers):
         sys.exit(f"{path} holds a word in two casings; nothing changed")
 
+    lang = os.path.basename(path).split(".")[0]
     forms = load_mid_sentence_forms(corpus) if corpus else None
-    cased = casing(lowers, dictionary, also, forms)
+    if mixed_only:
+        current = {low: old for low, old in zip(lowers, words) if old != low}
+        both = mixed(lowers, current, forms)
+        print(f"mixed: {len(both)} words small in the list, a capital at least half the time in the corpus",
+              file=sys.stderr)
+        if dry_run:
+            for w in both:
+                print(f"mixed\t{w}")
+        else:
+            with open(mixed_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(both) + "\n")
+        return
+    if strict:
+        cased = strict_casing(lowers, list(words), dictionary, forms, lang)
+    else:
+        cased = casing(lowers, dictionary, also, forms, lang)
+    for low, old in zip(lowers, words):
+        if low in AS_IS.get(lang, ()):
+            if old != low:
+                cased[low] = old
+            else:
+                cased.pop(low, None)
     out = {cased.get(low, low): f for low, f in zip(lowers, words.values())}
 
     changed = [(old, new, f) for (old, f), new in zip(words.items(), out) if old != new]
@@ -190,7 +274,7 @@ def main() -> None:
             print(f"mixed\t{w}")
         return
     with open(path, "w", encoding="utf-8") as f:
-        f.write(json.dumps(out) + "\n")
+        f.write(json.dumps(out, **fmt[0]) + fmt[1])
     if mixed_path:
         with open(mixed_path, "w", encoding="utf-8") as f:
             f.write("\n".join(both) + "\n")

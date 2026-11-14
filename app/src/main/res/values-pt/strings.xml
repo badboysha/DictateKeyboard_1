@@ -1337,6 +1337,7 @@
     <string name="dictate__error_transcription_failed">Falha na transcrição.</string>
     <string name="dictate__error_unknown">Erro desconhecido durante a transcrição.</string>
     <string name="dictate__error_rewording_failed">Falha na reformulação.</string>
+    <string name="dictate__error_prompt_field_unreadable">Não foi possível ler todo o texto – selecione-o primeiro</string>
     <string name="dictate__error_rewording_default_model">%1$s é o modelo predefinido incorporado de %2$s, não um que tenhas escolhido. Escolhe um modelo de reformulação em Fornecedores de IA.</string>
     <string name="dictate__notice_rewording_failed">Falha na reformulação – texto bruto inserido</string>
     <string name="dictate__error_overlay_insert_clipboard">Esta aplicação não aceitou o texto. Está na área de transferência — mantenha o campo premido e cole.</string>
@@ -1418,6 +1419,7 @@
     <string name="dictate__providers_get_key">Obter uma chave de API</string>
     <string name="dictate__providers_field_name">Nome</string>
     <string name="dictate__providers_field_transcription_model">Modelo de transcrição</string>
+    <string name="dictate__providers_field_transcription_reasoning">Esforço de raciocínio da transcrição</string>
     <string name="dictate__providers_field_chat_model">Modelo de reformulação</string>
     <string name="dictate__providers_test">Testar ligação</string>
     <string name="dictate__providers_test_transcribe">Testar a transcrição</string>

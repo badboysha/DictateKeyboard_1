@@ -1278,6 +1278,7 @@
     <string name="dictate__error_transcription_failed">Transkription fehlgeschlagen.</string>
     <string name="dictate__error_unknown">Unbekannter Fehler bei der Transkription.</string>
     <string name="dictate__error_rewording_failed">Umformulierung fehlgeschlagen.</string>
+    <string name="dictate__error_prompt_field_unreadable">Text nicht ganz lesbar – markiere ihn zuerst</string>
     <string name="dictate__error_rewording_default_model">%1$s ist das eingebaute Standardmodell von %2$s, nicht deine Wahl. Wähle unter KI-Anbieter ein Modell für die Umformulierung.</string>
     <string name="dictate__notice_rewording_failed">Umformulierung fehlgeschlagen – Rohtext eingefügt</string>
     <string name="dictate__error_overlay_insert_clipboard">Diese App hat den Text nicht angenommen. Er liegt in der Zwischenablage — Feld gedrückt halten und einfügen.</string>
@@ -1368,6 +1369,7 @@
     <string name="dictate__providers_get_key">API-Schlüssel holen</string>
     <string name="dictate__providers_field_name">Name</string>
     <string name="dictate__providers_field_transcription_model">Transkriptionsmodell</string>
+    <string name="dictate__providers_field_transcription_reasoning">Denkaufwand der Transkription</string>
     <string name="dictate__providers_field_chat_model">Umformulierungsmodell</string>
     <string name="dictate__providers_test">Verbindung testen</string>
     <string name="dictate__providers_test_transcribe">Transkription testen</string>

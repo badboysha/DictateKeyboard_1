@@ -1202,6 +1202,7 @@
     <string name="dictate__error_transcription_failed">Не вдалося виконати транскрибування.</string>
     <string name="dictate__error_unknown">Невідома помилка під час транскрибування.</string>
     <string name="dictate__error_rewording_failed">Не вдалося переформулювати.</string>
+    <string name="dictate__error_prompt_field_unreadable">Не вдалося прочитати весь текст – спочатку виділіть його</string>
     <string name="dictate__error_rewording_default_model">%1$s — вбудована типова модель для %2$s, а не вибрана вами. Виберіть модель перефразування в розділі «Постачальники ШІ».</string>
     <string name="dictate__notice_rewording_failed">Не вдалося переформулювати – вставлено вихідний текст</string>
     <string name="dictate__error_overlay_insert_clipboard">Цей застосунок не прийняв текст. Він у буфері обміну — утримуйте поле й вставте.</string>
@@ -1283,6 +1284,7 @@
     <string name="dictate__providers_get_key">Отримати API-ключ</string>
     <string name="dictate__providers_field_name">Назва</string>
     <string name="dictate__providers_field_transcription_model">Модель транскрибування</string>
+    <string name="dictate__providers_field_transcription_reasoning">Зусилля міркування під час транскрибування</string>
     <string name="dictate__providers_field_chat_model">Модель переформулювання</string>
     <string name="dictate__providers_test">Перевірити підключення</string>
     <string name="dictate__providers_test_transcribe">Перевірити транскрибування</string>
