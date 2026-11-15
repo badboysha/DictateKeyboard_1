@@ -240,6 +240,9 @@ object LocalModelCatalog {
         val MOONDREAM = ModelCredit(
             "moondream", "CC-BY-4.0", "https://huggingface.co/moondream/parakeet-ultra",
         )
+        val FLUIDVOICE = ModelCredit(
+            "FluidVoice", "CC-BY-4.0", "https://huggingface.co/FluidVoice-Labs/fluid-speech-pro",
+        )
 
         /** NVIDIA publishes under CC-BY-4.0 per model, never per family — hence the URL per entry. */
         fun nvidia(url: String) = ModelCredit("NVIDIA", "CC-BY-4.0", url)
@@ -363,7 +366,7 @@ object LocalModelCatalog {
      * improves by 57 % (de), 35 % (lv) and 31 % (en) while the fp32 models are nearly level. The same
      * training that lets moondream publish a 1.58-bit sibling is the plausible reason.
      *
-     * **Not exported by sherpa-onnx** — the only such entry. moondream publishes PyTorch weights and a
+     * **Not exported by sherpa-onnx**, like [FLUID_SPEECH_PRO]. moondream publishes PyTorch weights and a
      * closed runtime, no ONNX. Since the architecture is the original's, the weights were substituted
      * into sherpa's own v3 graph instead of exporting a new one, so every property the runtime reads
      * (I/O names, TDT durations, subsampling factor, the `tdt` marker in the url metadata — see #176)
@@ -386,6 +389,56 @@ object LocalModelCatalog {
             LocalModelFile("$REL/parakeet-ultra-decoder.int8.onnx", LocalTranscriptionProvider.DECODER, 11_845_274, "1fab98fe6c12aded87d2da66272cc9e148d0a0044ce3850a12fe56302ec4a922"),
             LocalModelFile("$REL/parakeet-ultra-joiner.int8.onnx", LocalTranscriptionProvider.JOINER, 6_355_277, "8ba94c6919c17a6bd27368fb89533628a72ffc81d4acedebf3cdcb2cae331dbb"),
             LocalModelFile("$REL/parakeet-ultra-tokens.txt", LocalTranscriptionProvider.TOKENS, 93_939, "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"),
+            VAD_FILE,
+        ),
+    )
+
+    /**
+     * ~729 MB. Fluid Speech Pro (issue #481) — FluidVoice's post-train of [PARAKEET_ULTRA], and through it
+     * of [PARAKEET_TDT_V3]: the same 25 languages and a byte-identical tokenizer, plus one small block
+     * between the encoder's subsampling and its first Conformer layer, which lives inside the encoder file.
+     *
+     * **Offered beside Ultra, not instead of it** — listed above it and offered for German during setup,
+     * but Ultra is not retired. Measured 2026-11-13 on FLEURS dev (one recording per sentence, ~145 per
+     * language) through the vendored sherpa-onnx 1.13.3 at the app's two threads, against the Ultra file
+     * this catalog ships: German 5,73 → 4,66 %, English 6,70 → 5,54 %, Latvian 26,49 → 20,48 %, Slovene
+     * 32,55 → 22,90 %. FluidVoice's model card compares only with v3, against which the two look nearly
+     * level; the gap shows only against what is actually shipped. The price is speed, and how much
+     * depends on the CPU: 11,2× real time against Ultra's 16,0× on a desktop x86, but on a Galaxy A55
+     * (2026-11-14, release build) only 4–16 % longer per dictation — 1239 against 1187 ms for 7 s of
+     * speech, 2641 against 2284 ms for 16 s. ONNX Runtime's ARM64 kernels for 8-bit weights carry that.
+     *
+     * **These are not FluidVoice's files as published.** Their int8 is `MatMulNBits` (8-bit weights in
+     * blocks of 128) with no `accuracy_level`, so every block is dequantised and multiplied in fp32 —
+     * 4,1× real time, a quarter of Ultra's speed. Level 4 on all 270 nodes quantises the activations per
+     * block and uses int8 dot products instead: the same WER within noise, nearly three times as fast.
+     * Their weights also sit in external `.data` files, which a graph finds by name and so would lose
+     * under [LocalModelFile.destName]; they are inlined, which also drops the ~72 MB of clean-mode weights
+     * those files carry for graphs this entry does not ship. No weight byte is changed: the repacked set
+     * decodes 147 of 147 German sentences to exactly the text of the originals at level 4, and each file
+     * says what was done in its `dictate_note` metadata.
+     *
+     * The one place it reads worse: in 3 of 20 German sentences with digits it spells them out
+     * ("vierzig") where Ultra writes them — nowhere near the Orukeet failure of PR #401.
+     *
+     * Licensing: CC-BY-4.0 (FluidVoice, over moondream's and NVIDIA's CC-BY-4.0), credited as FluidVoice
+     * asks: "Fluid Speech Pro by FluidVoice".
+     */
+    val FLUID_SPEECH_PRO = LocalModelSpec(
+        id = "fluid-speech-pro",
+        displayName = "Fluid Speech Pro",
+        // FluidVoice only says "tested on clips up to 30 seconds". Decoded here in one pass at 38, 63,
+        // 98 and 131 s without breaking down, as Ultra does on the same audio, so Ultra's ceiling holds.
+        maxSegmentSeconds = 120,
+        languages = Langs.PARAKEET_V3,
+        punctuates = true,
+        credit = Credits.FLUIDVOICE,
+        kind = LocalModelKind.NEMO_TRANSDUCER,
+        files = listOf(
+            LocalModelFile("$REL/fluid-speech-pro-encoder.int8.onnx", LocalTranscriptionProvider.ENCODER, 674_000_326, "fe24c491cea76d0ebc51895677366bf302a5175c4210c397788da91790681878"),
+            LocalModelFile("$REL/fluid-speech-pro-decoder.int8.onnx", LocalTranscriptionProvider.DECODER, 47_234_001, "d13b4731d9c85f95cdd7a19bf1ccd1c9ed287a9f5830cdb365cd1db8ca699687"),
+            LocalModelFile("$REL/fluid-speech-pro-joiner.int8.onnx", LocalTranscriptionProvider.JOINER, 6_549_306, "021aabcc9c2ab64cbe7ad8611640d84ccd4b69a89f70f06a047a92c8e675acf3"),
+            LocalModelFile("$REL/fluid-speech-pro-tokens.txt", LocalTranscriptionProvider.TOKENS, 93_939, "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"),
             VAD_FILE,
         ),
     )
@@ -866,8 +919,10 @@ object LocalModelCatalog {
      * what most people will end up downloading rather than by architecture or by when a model was added.
      *
      * Broad coverage and a small download come first: the English Parakeet at 137 MB, then Canary with
-     * the four biggest European languages at 208 MB, then Parakeet Ultra, which speaks twenty-five but
-     * costs 670 MB — with the v3 it retired directly behind it, where only its existing owners see it. The language specialists follow, and the two 670 MB entries sink towards the bottom.
+     * the four biggest European languages at 208 MB, then the two that speak twenty-five: Fluid Speech
+     * Pro first, as the more accurate one, and Parakeet Ultra right behind it at 60 MB less — with the v3
+     * Ultra retired behind them, where only its existing owners see it.
+     * The language specialists follow, and the two 670 MB entries sink towards the bottom.
      *
      * **Whisper last**, before the live models. It is the one everybody recognises, which is exactly why
      * it should not be the first thing offered: for almost every language in this catalog there is now
@@ -881,6 +936,7 @@ object LocalModelCatalog {
     val all: List<LocalModelSpec> = listOf(
         PARAKEET_TDT_110M_EN,
         CANARY_180M_FLASH,
+        FLUID_SPEECH_PRO,
         PARAKEET_ULTRA,
         PARAKEET_TDT_V3,
         FASTCONFORMER_DE,
@@ -922,21 +978,23 @@ object LocalModelCatalog {
             // expensive one. FastConformer is specialized *and* the cheaper of the two, so the shape of
             // this pair finally matches every other language: the one that fits, then the bigger one.
             //
-            // The bigger one is [PARAKEET_ULTRA] rather than the German [PARAKEET_PRIMELINE_DE] since
-            // #414: on 200 FLEURS dev files it reads German at 5,23 % WER against primeline's 6,57 %, at
-            // the same 670 MB and the same speed, and it covers the other 24 languages besides — which
-            // matters for the many people who dictate in more than one. primeline stays in the picker
-            // for anyone who wants it: that measurement is read speech, and its own claim rests on
-            // Tuda-De, so it is enough to choose a default with and not enough to retire a specialist.
-            "de" -> listOf(FASTCONFORMER_DE, PARAKEET_ULTRA)
+            // The bigger one is multilingual rather than the German [PARAKEET_PRIMELINE_DE] since #414:
+            // on 200 FLEURS dev files [PARAKEET_ULTRA] read German at 5,23 % WER against primeline's
+            // 6,57 %, at the same 670 MB and the same speed, and it covers the other 24 languages
+            // besides — which matters for the many people who dictate in more than one. primeline stays
+            // in the picker for anyone who wants it: that measurement is read speech, and its own claim
+            // rests on Tuda-De, so it is enough to choose a default with and not enough to retire a
+            // specialist. Since #481 the multilingual offer is [FLUID_SPEECH_PRO], which makes a fifth
+            // fewer mistakes in German than Ultra for 60 MB more and barely more time on a phone.
+            "de" -> listOf(FASTCONFORMER_DE, FLUID_SPEECH_PRO)
             "en" -> listOf(PARAKEET_TDT_110M_EN, WHISPER_SMALL_EN)
             else -> listOf(WHISPER_BASE, WHISPER_SMALL)
         }
 
     /**
      * [all] folded into the rows the picker's first level shows: a family appears once, in the place of
-     * its first member, and everything else stands for itself. Twenty-six entries become twelve rows,
-     * of which [visibleTopLevel] shows ten to anyone new: eight models that are their own choice, plus
+     * its first member, and everything else stands for itself. Twenty-seven entries become thirteen rows,
+     * of which [visibleTopLevel] shows eleven to anyone new: nine models that are their own choice, plus
      * Whisper and Kroko — the two retired entries are seen only by the people who have them.
      *
      * Order is [all]'s, which is what keeps the streaming rows a contiguous tail and the "Live" heading

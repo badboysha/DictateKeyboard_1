@@ -152,9 +152,9 @@ class LocalModelCatalogTest {
         assertEquals("gigaam-v3-ru", LocalModelCatalog.onboardingPicks("ru").first().id)
         // German is offered its own specialized model first and the 670 MB one as the bigger alternative.
         assertEquals("fastconformer-de", LocalModelCatalog.onboardingPicks("de").first().id)
-        // The bigger German offer is the multilingual Parakeet, not the German-only primeline, because
-        // it reads German better at the same size and speaks 24 more languages (#414).
-        assertEquals("parakeet-ultra", LocalModelCatalog.onboardingPicks("de")[1].id)
+        // The bigger German offer is multilingual, not the German-only primeline, because it reads German
+        // better and speaks 24 more languages (#414) — since #481 Fluid Speech Pro, which beats Ultra.
+        assertEquals("fluid-speech-pro", LocalModelCatalog.onboardingPicks("de")[1].id)
         assertEquals("parakeet-tdt-110m-en", LocalModelCatalog.onboardingPicks("en").first().id)
         assertEquals("whisper-base", LocalModelCatalog.onboardingPicks("fr").first().id)
         // A region or script suffix must not fall through to the default.
@@ -303,6 +303,7 @@ class LocalModelCatalogTest {
         assertTrue(LocalModelCatalog.GIGAAM_V3_RU.punctuates)
         assertTrue(LocalModelCatalog.KROKO_EN.punctuates)
         assertTrue(LocalModelCatalog.DOLPHIN_BASE.punctuates)
+        assertTrue(LocalModelCatalog.FLUID_SPEECH_PRO.punctuates)
         // Dolphin's export carries an <en> token but Dolphin does not claim English, and on real English
         // speech it answers in Urdu script. Naming it here would send people to a model that cannot.
         assertTrue(
@@ -338,6 +339,8 @@ class LocalModelCatalogTest {
             LocalModelCatalog.PARAKEET_TDT_V3,
             LocalModelCatalog.PARAKEET_TDT_110M_EN,
             LocalModelCatalog.FASTCONFORMER_DE,
+            // FluidVoice documents only 30 s, but it was decoded here at up to 131 s in one pass.
+            LocalModelCatalog.FLUID_SPEECH_PRO,
         )) {
             assertTrue(
                 spec.maxSegmentSeconds >= 60,
