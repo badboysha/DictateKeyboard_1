@@ -79,6 +79,7 @@ class OpenAiCompatibleClient(
                 callTimeoutSeconds = config.callTimeoutSeconds,
                 proxy = config.proxy,
                 trustUserCerts = config.trustUserCerts,
+                clientCertAlias = config.clientCertAlias,
                 connectTimeoutSeconds = connectTimeoutSeconds,
             )
         ) { buildClient() }
@@ -932,6 +933,9 @@ class OpenAiCompatibleClient(
      *  - `phraseList` carries the user's custom words, [TranscriptionRequest.vocabulary], as Google's
      *    dedicated model gets them (#292). A dedicated speech-to-text model has nowhere to put prose, so
      *    the style hint itself stays behind.
+     *  - `profanityFilterMode` is `None`: a keyboard writes what was said (#496). Azure's default is
+     *    `Masked`, and since about 2026-11-20 MAI honours it. Measured 2026-11-26 on MAI-Transcribe-2 and
+     *    1.5: "Juicy *** … damn good ****" without the field, the words as spoken with it.
      */
     private suspend fun transcribeAzure(
         request: TranscriptionRequest,
@@ -955,6 +959,7 @@ class OpenAiCompatibleClient(
                 },
             ),
             phraseList = VocabularyField.AZURE.fit(request.vocabulary).ifEmpty { null }?.let(::AzurePhraseListDto),
+            profanityFilterMode = AZURE_PROFANITY_FILTER_NONE,
         )
         val multipart = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
@@ -1700,7 +1705,7 @@ class OpenAiCompatibleClient(
             .readTimeout(timeout)
             .writeTimeout(timeout)
             .eventListenerFactory { call -> HttpCallDiagnostics.listenerFor(call.request()) }
-            .applyNetworkSettings(config.proxy, config.trustUserCerts)
+            .applyNetworkSettings(config.proxy, config.trustUserCerts, config.clientCertAlias)
         return builder.build()
     }
 
@@ -1941,6 +1946,8 @@ class OpenAiCompatibleClient(
         val locales: List<String>? = null,
         val enhancedMode: AzureEnhancedModeDto,
         val phraseList: AzurePhraseListDto? = null,
+        // No default, so it is always written: Azure's own default masks swear words (#496).
+        val profanityFilterMode: String,
     )
 
     @Serializable
@@ -2184,6 +2191,7 @@ class OpenAiCompatibleClient(
             val callTimeoutSeconds: Long?,
             val proxy: ProxyConfig?,
             val trustUserCerts: Boolean,
+            val clientCertAlias: String,
             // Shorter while another provider waits to take over (#455); a shared client would otherwise
             // keep whichever connect timeout the first request happened to build it with.
             val connectTimeoutSeconds: Long,
@@ -2337,6 +2345,9 @@ class OpenAiCompatibleClient(
         /** Azure's readable style: fillers, false starts and self-corrections dropped. See [transcribeAzure]. */
         private const val AZURE_TRANSCRIBE_STYLE_CLEAN = "clean"
 
+        /** Swear words as spoken rather than masked with asterisks (#496). See [transcribeAzure]. */
+        private const val AZURE_PROFANITY_FILTER_NONE = "None"
+
         /** Whether [model] is Mistral's Voxtral, whose field for the custom words is `context_bias` (#466). */
         internal fun usesContextBias(model: String): Boolean = model.trim().lowercase().startsWith("voxtral")
 
@@ -2420,6 +2431,8 @@ class OpenAiCompatibleClient(
             proxy: ProxyConfig? = null,
             useChatAudio: Boolean = false,
             trustUserCerts: Boolean = false,
+            /** KeyChain alias of a client certificate for mutual TLS, "" for none — see [ProviderConfig.clientCertAlias]. */
+            clientCertAlias: String = "",
             /** Per-read/write limit, which also caps how long the model may stay silent — see [ProviderConfig.timeoutSeconds]. */
             timeoutSeconds: Long = ProviderConfig.DEFAULT_TIMEOUT_SECONDS,
             /** Whole-call budget where the default two minutes is too short — see [ProviderConfig.callTimeoutSeconds]. */
@@ -2437,6 +2450,7 @@ class OpenAiCompatibleClient(
                 transcriptionApi = preset.transcriptionApi,
                 useChatAudio = useChatAudio,
                 trustUserCerts = trustUserCerts,
+                clientCertAlias = clientCertAlias,
                 curatedModels = (preset.curatedTranscriptionModels + preset.curatedChatModels).distinct(),
                 handOverUnreachable = handOverUnreachable,
             )

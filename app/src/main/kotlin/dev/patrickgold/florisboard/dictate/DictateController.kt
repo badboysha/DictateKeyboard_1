@@ -2253,6 +2253,7 @@ object DictateController {
                             // Single-call multimodal (issue #130): route audio through chat/completions.
                             useChatAudio = chatAudio,
                             trustUserCerts = account.trustUserCerts,
+                            clientCertAlias = account.clientCertAlias,
                             timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
                             handOverUnreachable = fallbackId != null,
                         ).transcribe(
@@ -2271,6 +2272,7 @@ object DictateController {
                                 proxy = prefs.dictate.dictateProxyConfig(),
                                 useChatAudio = chatAudio,
                                 trustUserCerts = account.trustUserCerts,
+                                clientCertAlias = account.clientCertAlias,
                                 timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
                                 handOverUnreachable = fallbackId != null,
                             ).transcribe(
@@ -2963,6 +2965,7 @@ object DictateController {
                     vocabulary = customWordList(prefs),
                     proxy = prefs.dictate.dictateProxyConfig(),
                     trustUserCerts = account.trustUserCerts,
+                    clientCertAlias = account.clientCertAlias,
                 )
             }
         }.getOrElse { realtimeFailed = true; null } ?: return null
@@ -3547,6 +3550,7 @@ object DictateController {
                         proxy = prefs.dictate.dictateProxyConfig(),
                         useChatAudio = false,
                         trustUserCerts = account.trustUserCerts,
+                        clientCertAlias = account.clientCertAlias,
                         timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
                         handOverUnreachable = fallbackId != null,
                     ).transcribe(request)
@@ -3560,6 +3564,7 @@ object DictateController {
                             proxy = prefs.dictate.dictateProxyConfig(),
                             useChatAudio = false,
                             trustUserCerts = account.trustUserCerts,
+                            clientCertAlias = account.clientCertAlias,
                             timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
                             handOverUnreachable = fallbackId != null,
                         ).transcribe(request.copy(audioFile = toUpload))
@@ -4865,7 +4870,9 @@ object DictateController {
             _state.value = UiState.Rewording(context.getString(R.string.dictate__status_formatting))
             // Hint the model with the readable language name ("German"), or "unknown" for auto-detect.
             val languageName = DictateLanguages.englishNameFor(prefs.dictate.activeInputLanguage.get())
-            val formatPrompt = DictatePromptDefaults.buildAutoFormattingPrompt(languageName, text)
+            val formatPrompt = DictatePromptDefaults.buildAutoFormattingPrompt(
+                languageName, text, DictatePromptDefaults.userInstructionOf(systemPrompt()),
+            )
             val formatted = rewordOrKeep(text) { requestRewordRaw(formatPrompt) }
             // Safety net (#124): on (near-)empty input the model sometimes echoes the formatting prompt
             // itself instead of returning nothing. If the result looks like that prompt, discard it and keep
@@ -5014,6 +5021,7 @@ object DictateController {
                     baseUrlOverride = baseUrl,
                     proxy = prefs.dictate.dictateProxyConfig(),
                     trustUserCerts = account.trustUserCerts,
+                    clientCertAlias = account.clientCertAlias,
                 ).listModels()
             }
         }
@@ -5071,6 +5079,7 @@ object DictateController {
             baseUrlOverride = baseUrlOverrideFor(account),
             proxy = prefs.dictate.dictateProxyConfig(),
             trustUserCerts = account.trustUserCerts,
+            clientCertAlias = account.clientCertAlias,
             timeoutSeconds = prefs.dictate.requestTimeout.get().toLong(),
         )
         // Reasoning (#141): the account's own setting, unless the prompt asks for a level of its own (#155).
@@ -5129,6 +5138,11 @@ object DictateController {
                 promptsDb(context).getAll().filter { it.autoApply && it.snippetBody() == null }
             }
             autoApply.forEach { p -> p.prompt?.takeIf { it.isNotBlank() }?.let { parts.add(it) } }
+            // The user's own rewording instruction goes wherever the two-call path would have sent a rewording
+            // request (#497), so only with something folded in above.
+            if (prefs.dictate.autoFormattingEnabled.get() || autoApply.isNotEmpty()) {
+                DictatePromptDefaults.userInstructionOf(systemPrompt())?.let { parts.add(it) }
+            }
         }
         // The same anchor the two-call path gets from REWORDING_BE_PRECISE (issue #268). The prompts
         // folded in above are seeded in the device's locale, so on a Ukrainian phone a "fix my grammar"
